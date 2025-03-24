@@ -1,34 +1,55 @@
 /*
-Copyright © 2025 NAME HERE <EMAIL ADDRESS>
-
+Copyright © 2025 Eli Heady
 */
 package cmd
 
 import (
+	"fmt"
 	"os"
+	"unicode/utf8"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/net/idna"
 )
 
-
-
-// rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "wtutf",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
+	Args:  cobra.ExactArgs(1),
+	Short: "A simple utility to help me out of my ASCII-centric shell",
+	Long: `This program just prints out the Unicode code points of the string you feed into it. It can also show you the punycode conversion.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-	// Run: func(cmd *cobra.Command, args []string) { },
+$ wtutf piñata
+total bytes: 8
+characters: 7
+    code point  (bytes)
+p:      0x70    (1)
+i:      0x69    (1)
+n:      0x6e    (1)
+̃:      0x303   (2)
+a:      0x61    (1)
+t:      0x74    (1)
+a:      0x61    (1)
+punycode:
+could not punycode-convert input
+
+$ wtutf piñata  
+total bytes: 7
+characters: 6
+    code point  (bytes)
+p:      0x70    (1)
+i:      0x69    (1)
+ñ:      0xf1    (2)
+a:      0x61    (1)
+t:      0x74    (1)
+a:      0x61    (1)
+punycode:
+xn--piata-pta
+.`,
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Print(processInput(args[0]))
+	},
 }
 
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	err := rootCmd.Execute()
 	if err != nil {
@@ -36,16 +57,35 @@ func Execute() {
 	}
 }
 
-func init() {
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
+func processInput(ustring string) string {
 
-	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.wtutf.yaml)")
+	if ustring == "" {
+		fmt.Println("uh, sure ... the empty string is")
+	}
 
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	var out string
+
+	out += fmt.Sprintf("total bytes: %d\n", len(ustring))
+	out += fmt.Sprintf("characters: %d\n", utf8.RuneCountInString(ustring))
+
+	out += "    code point\t(bytes)\n"
+	for _, r := range ustring {
+		out += fmt.Sprintf("%c:\t%#02x\t(%d)\n", r, r, len(string(r)))
+	}
+
+	puny := idna.New(
+		idna.BidiRule(),
+		idna.CheckJoiners(true),
+		idna.CheckHyphens(true),
+		idna.ValidateForRegistration(),
+		idna.ValidateLabels(true),
+	)
+	out += "punycode:\n"
+	if pc, err := puny.ToASCII(ustring); err == nil {
+		out += pc
+	} else {
+		out += "could not punycode-convert input"
+	}
+	out += "\n"
+	return out
 }
-
-

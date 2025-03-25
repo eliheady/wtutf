@@ -56,7 +56,7 @@ a:        0x61 | (1)
 Care is taken to avoid echoing control characters in the output
 
 ```shell
-$ wtutf -s "$(echo -n 🔔bell0 | tr '0' '\007')" 
+$ wtutf -s "$(echo -n 🔔bell. | tr '.' '\007')" 
 total bytes:    9
 characters:     6
 punycode:       could not punycode-convert input

@@ -129,7 +129,7 @@ func processInput(cmd *cobra.Command, ustring string) string {
 
 	header := "     code point | bytes "
 	if !converted {
-		header += "| conversion errors"
+		header += "| conversion rules violated"
 	}
 	out += header + "\n"
 

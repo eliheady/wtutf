@@ -2,7 +2,7 @@
 
 A simple utility to help me out of my ASCII-centric shell
 
-This program just prints out the Unicode code points of the string you feed into it. It can also show you the punycode conversion of your string and failure reasons if conversion isn't possible.
+This program just prints out the code points of the string you feed into it. It can also show you the punycode conversion of your string and failure reasons if conversion isn't possible.
 
 Try this
 ```shell
@@ -71,15 +71,15 @@ punycode:       could not punycode-convert input
 
 ### Why make this?
 
-I was interested in punycode and IDNA standards and wanted to make a simple utility to run locally to test coversion of various Unicode characters.
+I was interested in punycode and IDNA standards and wanted to make a simple utility to run locally to test conversion of various Unicode characters.
 
 The Unicode Transformation Format – 8-bit (UTF-8) encoding allows for some difficult to interpret strings even when your rendering environment doesn't garble the characters with question marks or boxes.
 
-The combining characters are a good example. The usage string above shows two strings that look identical on my system: "piñata" and "piñata". Only if I examine the bytes of those strings can I see that the second one uses 0x6e (n) and the UTF-8 "combining tilde" character 0x0303 ( ̃) to create the Spanish eñe. The first uses the single 0xf1 (ñ) "precomposed character".
+The combining characters are a good example. The usage example above shows two strings that look identical on my system: "piñata" and "piñata". Only if I examine the bytes of those strings can I see that the second one uses 0x6e (n) and the UTF-8 "combining tilde" character 0x0303 ( ̃) to create the Spanish eñe. The first uses the single 0xf1 (ñ) "precomposed character".
 
-The combining characters aren't allowed in IDN domain registrations because they would provide a way to register names that are visually indistinguishable but comprised of different bytes, making things confusing for online piñata shopping.
+Many combining characters aren't allowed in IDN domain registrations because they would provide a way to register names that are visually indistinguishable but comprised of different bytes, making things confusing for online piñata shopping. This is similar to the general problem of homoglyphs in the DNS. Unfortunately homoglyphs can still be used in various underhanded ways in domain names and this tool could be useful to examine suspect strings.
 
-This program shows what went into strings that look identical but aren't. It is also useful if you need to troubleshoot punycode conversion.
+This program shows what went into strings that look similar but aren't identical. It is also useful if you need to troubleshoot punycode conversion.
 
 ### Useful documents
 

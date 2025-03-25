@@ -75,6 +75,28 @@ func enumerateErrors(r rune) string {
 
 }
 
+// politePrint takes a rune and outputs a human readable conversion
+func politePrint(r rune) string {
+	// there's a box of mysteries to explore if you print random crap
+	// into a terminal. Let's try to be nice and avoid trashing the
+	// user's environment. It was their input, but they could be
+	// drunk. Or a cat.
+	politeCharmap := []string{
+		"^@", "^A", "^B", "^C", "^D", "^E", "^F", "^G", "^H", "^I", "^J", "^K", "^L",
+		"^M", "^N", "^O", "^P", "^Q", "^R", "^S", "^T", "^U", "^V", "^W", "^X", "^Y",
+		"^Z", "^[", "^\\", "^]", "^^", "^_",
+	}
+	switch {
+	case int(r) <= len(politeCharmap):
+		return politeCharmap[r] // C0 controls
+	case int(r) == 127:
+		return "^?" // DEL
+	case 0x80 <= r && r <= 0x9f:
+		return "C1" // Unicode C1 controls
+	}
+	return string(r)
+}
+
 func processInput(cmd *cobra.Command, ustring string) string {
 
 	flags := cmd.Flags()
@@ -105,20 +127,17 @@ func processInput(cmd *cobra.Command, ustring string) string {
 	}
 	out += "\n"
 
-	header := "    code point | bytes "
+	header := "     code point | bytes "
 	if !converted {
-		header += " | conversion errors"
+		header += "| conversion errors"
 	}
 	out += header + "\n"
 
 	for _, r := range ustring {
-		safeToPrint := r
 		moreErrors := ""
 		var padded string
+		printable := fmt.Sprintf("% 2s", politePrint(r)) // don't print garbage
 		switch {
-		case r < 0x20:
-			safeToPrint = ' '
-			padded = fmt.Sprintf("%#02x", r)
 		case r > 0xff:
 			padded = fmt.Sprintf("%#04x", r)
 		case r > 0xffff:
@@ -129,7 +148,7 @@ func processInput(cmd *cobra.Command, ustring string) string {
 		if !converted {
 			moreErrors = fmt.Sprintf("\t| %s", enumerateErrors(r))
 		}
-		out += fmt.Sprintf("%c:\t% 6s | (%d)%s\n", safeToPrint, padded, len(string(r)), moreErrors)
+		out += fmt.Sprintf("%s:\t% 7s | (%d)%s\n", printable, padded, len(string(r)), moreErrors)
 	}
 
 	return out

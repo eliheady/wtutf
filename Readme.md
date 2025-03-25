@@ -53,6 +53,22 @@ t:        0x74 | (1)
 a:        0x61 | (1)
 ```
 
+Care is taken to avoid echoing control characters in the output
+
+```shell
+$ wtutf -s "$(echo -n 🔔bell0 | tr '0' '\007')" 
+total bytes:    9
+characters:     6
+punycode:       could not punycode-convert input
+     code point | bytes | conversion errors
+ 🔔:    0x1f514 | (4)   | 
+ b:        0x62 | (1)   | 
+ e:        0x65 | (1)   | 
+ l:        0x6c | (1)   | 
+ l:        0x6c | (1)   | 
+^G:        0x07 | (1)   | ValidateForRegistration (RFC 5891)
+```
+
 ### Why make this?
 
 I was interested in punycode and IDNA standards and wanted to make a simple utility to run locally to test coversion of various Unicode characters.

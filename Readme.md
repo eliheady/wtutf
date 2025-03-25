@@ -9,18 +9,18 @@ Try this
 export PINATA1="piñata" 
 export PINATA2="piñata" 
 
-echo "\$PINATA1 has $(echo -n $PINATA1 | wc -c) bytes"
-echo "\$PINATA2 has $(echo -n $PINATA2 | wc -c) bytes"
+echo "$PINATA1 has $(echo -n $PINATA1 | wc -c) bytes"
+echo "$PINATA2 has $(echo -n $PINATA2 | wc -c) bytes"
 
-if [[ "${PINATA1}" != "${PINATA2}" ]]
+if [[ "$PINATA1" != "$PINATA2" ]]
 then
     echo 'they do not match!'
 fi
 ```
 
 ```
-$PINATA1 has        8 bytes
-$PINATA2 has        7 bytes
+piñata has        8 bytes
+piñata has        7 bytes
 they do not match!
 ```
 
@@ -80,3 +80,9 @@ The combining characters are a good example. The usage string above shows two st
 The combining characters aren't allowed in IDN domain registrations because they would provide a way to register names that are visually indistinguishable but comprised of different bytes, making things confusing for online piñata shopping.
 
 This program shows what went into strings that look identical but aren't. It is also useful if you need to troubleshoot punycode conversion.
+
+### Useful documents
+
+* https://www.unicode.org/reports/tr46/#Validity_Criteria
+* https://datatracker.ietf.org/doc/html/rfc5892
+* https://datatracker.ietf.org/doc/html/rfc8753

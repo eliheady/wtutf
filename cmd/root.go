@@ -86,13 +86,30 @@ func politePrint(r rune) string {
 		"^M", "^N", "^O", "^P", "^Q", "^R", "^S", "^T", "^U", "^V", "^W", "^X", "^Y",
 		"^Z", "^[", "^\\", "^]", "^^", "^_",
 	}
+	// todo: these filters are probably available in some form in the utf8 package
+
 	switch {
+	// reasoning: terminal control sequences can do all sorts of damage to the
+	// output.  we will remove them and put in the caret notation for C0 and 'C1'
+	// for C1 unicode control characters
 	case int(r) <= len(politeCharmap):
 		return politeCharmap[r] // C0 controls
 	case int(r) == 127:
 		return "^?" // DEL
-	case 0x80 <= r && r <= 0x9f:
+	case 0x206A <= r && r <= 0x206F: // deprecated format characters
+		return " "
+	case 0x80 <= r && r <= 0x9F:
 		return "C1" // Unicode C1 controls
+	// reasoning: we are printing a single character here. If we needed to print
+	// words then the directional marks should not be discarded. These checks are
+	// an attempt to prevent leaving an unclosed direction change in the output.
+	// ref. https://www.unicode.org/reports/tr9/#Directional_Formatting_Codes
+	case 0x202A <= r && r <= 0x202E: // LRE, RLE, PDF, LRO, RLO direction overrides
+		return " "
+	case r == 0x061C, r == 0x200E, r == 0x200F: // implicit direction marks
+		return " "
+	case 0x2066 <= r && r <= 0x2069: // LRI, RLI, FSI, PDI directional isolates
+		return " "
 	}
 	return string(r)
 }
@@ -136,11 +153,11 @@ func processInput(cmd *cobra.Command, ustring string) string {
 	for _, r := range ustring {
 		moreErrors := ""
 		var padded string
-		printable := fmt.Sprintf("% 2s", politePrint(r)) // don't print garbage
+		printable := fmt.Sprintf("% 3s", politePrint(r))
 		switch {
-		case r > 0xff:
+		case r > 0xFF:
 			padded = fmt.Sprintf("%#04x", r)
-		case r > 0xffff:
+		case r > 0xFFFF:
 			padded = fmt.Sprintf("%#06x", r)
 		default:
 			padded = fmt.Sprintf("%#02x", r)

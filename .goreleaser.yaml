@@ -20,8 +20,8 @@ builds:
       - CGO_ENABLED=0
     goos:
       - linux
-      - windows
       - darwin
+      #- windows
 
 archives:
   - formats: [tar.gz]
@@ -34,9 +34,9 @@ archives:
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
     # use zip for windows archives
-    format_overrides:
-      - goos: windows
-        formats: [zip]
+    #format_overrides:
+    #  - goos: windows
+    #    formats: [zip]
 
 changelog:
   sort: asc

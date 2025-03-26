@@ -35,7 +35,7 @@ punycode:       could not punycode-convert input
   p:        0x70 |  (1)  | 
   i:        0x69 |  (1)  | 
   n:        0x6e |  (1)  | 
-  ̃:       0x0303 |  (2)  | CheckJoiners (RFC 5892), ValidateForRegistration (RFC 5891), ValidateLabels (RFC 5891), UseSTD3ASCIIRules (RFC 1034, 5891, UTS 46)
+  ◌̃:      0x0303 |  (2)  | CheckJoiners (RFC 5892), ValidateForRegistration (RFC 5891), ValidateLabels (RFC 5891), UseSTD3ASCIIRules (RFC 1034, 5891, UTS 46)
   a:        0x61 |  (1)  | 
   t:        0x74 |  (1)  | 
   a:        0x61 |  (1)  |  

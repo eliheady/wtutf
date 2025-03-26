@@ -86,12 +86,12 @@ func politePrint(r rune) string {
 		"^M", "^N", "^O", "^P", "^Q", "^R", "^S", "^T", "^U", "^V", "^W", "^X", "^Y",
 		"^Z", "^[", "^\\", "^]", "^^", "^_",
 	}
-	// todo: these filters are probably available in some form in the utf8 package
 
 	switch {
 	// reasoning: terminal control sequences can do all sorts of damage to the
 	// output.  we will remove them and put in the caret notation for C0 and 'C1'
 	// for C1 unicode control characters
+	// todo: these filters are probably available in some form in the utf8 package
 	case int(r) <= len(politeCharmap):
 		return politeCharmap[r] // C0 controls
 	case int(r) == 127:
@@ -104,11 +104,11 @@ func politePrint(r rune) string {
 	// words then the directional marks should not be discarded. These checks are
 	// an attempt to prevent leaving an unclosed direction change in the output.
 	// ref. https://www.unicode.org/reports/tr9/#Directional_Formatting_Codes
-	case 0x202A <= r && r <= 0x202E: // LRE, RLE, PDF, LRO, RLO direction overrides
+	case 0x202A <= r && r <= 0x202E: // directional overrides (LRE, RLE, PDF, LRO, RLO)
 		return " "
-	case r == 0x061C, r == 0x200E, r == 0x200F: // implicit direction marks
+	case r == 0x061C, r == 0x200E, r == 0x200F: // implicit directional marks
 		return " "
-	case 0x2066 <= r && r <= 0x2069: // LRI, RLI, FSI, PDI directional isolates
+	case 0x2066 <= r && r <= 0x2069: // directional isolates (LRI, RLI, FSI, PDI)
 		return " "
 	}
 	return string(r)
@@ -144,28 +144,29 @@ func processInput(cmd *cobra.Command, ustring string) string {
 	}
 	out += "\n"
 
-	header := "     code point | bytes "
+	header := "      code point | bytes "
 	if !converted {
 		header += "| conversion rules violated"
 	}
 	out += header + "\n"
 
 	for _, r := range ustring {
+		// todo: implement caching of the rune validation and error enumeration
 		moreErrors := ""
 		var padded string
 		printable := fmt.Sprintf("% 3s", politePrint(r))
 		switch {
-		case r > 0xFF:
-			padded = fmt.Sprintf("%#04x", r)
 		case r > 0xFFFF:
 			padded = fmt.Sprintf("%#06x", r)
+		case r > 0xFF:
+			padded = fmt.Sprintf("%#04x", r)
 		default:
 			padded = fmt.Sprintf("%#02x", r)
 		}
 		if !converted {
-			moreErrors = fmt.Sprintf("\t| %s", enumerateErrors(r))
+			moreErrors = fmt.Sprintf(" | %s", enumerateErrors(r))
 		}
-		out += fmt.Sprintf("%s:\t% 7s | (%d)%s\n", printable, padded, len(string(r)), moreErrors)
+		out += fmt.Sprintf("%s:\t% 8s |  (%d) %s\n", printable, padded, utf8.RuneLen(r), moreErrors)
 	}
 
 	return out

@@ -5,6 +5,10 @@ version: 1
 env:
   - GO111MODULE=on
   - CGO_ENABLED=0
+  - VERSION=${{ github.event.release.tag_name }}
+  - COMMIT=${{ github.sha }}
+  - COMMIT_DATE=${{ github.event.release.created_at }}
+      
 
 # (Optional) Flags for the compiler.
 flags:
@@ -33,4 +37,4 @@ ldflags:
   - "-X main.Version={{ .Env.VERSION }}"
   - "-X main.Commit={{ .Env.COMMIT }}"
   - "-X main.CommitDate={{ .Env.COMMIT_DATE }}"
-  - "-X main.TreeState={{ .Env.TREE_STATE }}"
+  #- "-X main.TreeState={{ .Env.TREE_STATE }}"

@@ -88,11 +88,15 @@ func politePrint(r rune) string {
 	}
 
 	switch {
+	case 0x035C <= r && r <= 0x0362: // combining diacritical marks, 2 characters
+		return " ◌" + string(r) + "◌"
+	case 0x0303 <= r && r <= 0x036F: // combining diacritical marks
+		return "  ◌" + string(r)
 	// reasoning: terminal control sequences can do all sorts of damage to the
 	// output.  we will remove them and put in the caret notation for C0 and 'C1'
 	// for C1 unicode control characters
 	// todo: these filters are probably available in some form in the utf8 package
-	case int(r) <= len(politeCharmap):
+	case int(r) < len(politeCharmap):
 		return politeCharmap[r] // C0 controls
 	case int(r) == 127:
 		return "^?" // DEL

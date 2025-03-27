@@ -1,5 +1,25 @@
 /*
-Copyright © 2025 Eli Heady
+WTUTF: A simple UTF-8 string inspector.
+
+# Copyright © 2025 Eli Heady
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 */
 package cmd
 
@@ -35,8 +55,8 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&strict, "strict", "s", false, "Set strict punycode conversion rules")
 }
 
-// toPuny takes a rune and an idna.Option rule and calls idna.ToASCII,
-// returning the punycode string and error
+// toPuny takes a string and a slice of []idna.Option rules and calls
+// idna.ToASCII, returning the punycode string and error
 func toPuny(s string, rules []idna.Option) (string, error) {
 	punyRules := idna.New(
 		rules...,
@@ -44,8 +64,8 @@ func toPuny(s string, rules []idna.Option) (string, error) {
 	return punyRules.ToASCII(s)
 }
 
-// canPunyConvert takes a rune and an idna.Option rule and attempts the ToASCII
-// conversion, then reports success
+// canPunyConvert takes a rune and a slice of []idna.Option rules and attempts
+// the ToASCII conversion, then returns a bool indicating success
 func canPunyConvert(s string, rules []idna.Option) bool {
 	_, err := toPuny(s, rules)
 	return err == nil
@@ -92,6 +112,7 @@ func politePrint(r rune) string {
 		return " ◌" + string(r) + "◌"
 	case 0x0303 <= r && r <= 0x036F: // combining diacritical marks
 		return "  ◌" + string(r)
+	// filter control characters
 	// reasoning: terminal control sequences can do all sorts of damage to the
 	// output.  we will remove them and put in the caret notation for C0 and 'C1'
 	// for C1 unicode control characters
@@ -104,6 +125,7 @@ func politePrint(r rune) string {
 		return " "
 	case 0x80 <= r && r <= 0x9F:
 		return "C1" // Unicode C1 controls
+	// filter direction changing characters
 	// reasoning: we are printing a single character here. If we needed to print
 	// words then the directional marks should not be discarded. These checks are
 	// an attempt to prevent leaving an unclosed direction change in the output.

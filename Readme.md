@@ -86,3 +86,30 @@ This program shows what went into strings that look similar but aren't identical
 * https://www.unicode.org/reports/tr46/#Validity_Criteria
 * https://datatracker.ietf.org/doc/html/rfc5892
 * https://datatracker.ietf.org/doc/html/rfc8753
+
+
+### Installing
+
+Download a build from the Releases section at right or [here](https://github.com/eliheady/wtutf/releases).
+
+To verify provenance of a release, use the [slsa-verifier utility](https://github.com/slsa-framework/slsa-verifier) provided by the SLSA Framework project.
+
+Example of verifying the [v0.0.1 release](https://github.com/eliheady/wtutf/releases/tag/v0.0.1):
+```shell
+$ curl -sLo wtutf-darwin-arm64 https://github.com/eliheady/wtutf/releases/download/v0.0.1/wtutf-darwin-arm64
+$ curl -sLo wtutf-darwin-arm64.intoto.jsonl https://github.com/eliheady/wtutf/releases/download/v0.0.1/wtutf-darwin-arm64.intoto.jsonl
+$ slsa-verifier verify-artifact wtutf-darwin-arm64 --provenance-path wtutf-darwin-arm64.intoto.jsonl --source-uri github.com/eliheady/wtutf --source-tag v0.0.1
+
+Verified build using builder "https://github.com/slsa-framework/slsa-github-generator/.github/workflows/builder_go_slsa3.yml@refs/tags/v2.1.0" at commit cca466a774d7475d4c4c404d9374f95d09afc6ee
+Verifying artifact wtutf-darwin-arm64: PASSED
+
+PASSED: SLSA verification passed
+```
+
+### Build from source
+
+```shell
+git clone https://github.com/eliheady/wtutf
+cd wtutf
+go build .
+```

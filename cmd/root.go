@@ -110,7 +110,7 @@ func politePrint(r rune) string {
 	switch {
 	case 0x035C <= r && r <= 0x0362: // combining diacritical marks, 2 characters
 		return " ◌" + string(r) + "◌"
-	case 0x0303 <= r && r <= 0x036F: // combining diacritical marks
+	case 0x0300 <= r && r <= 0x036F: // combining diacritical marks
 		return "  ◌" + string(r)
 	// filter control characters
 	// reasoning: terminal control sequences can do all sorts of damage to the

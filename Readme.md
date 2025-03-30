@@ -90,7 +90,34 @@ The Unicode Transformation Format – 8-bit (UTF-8) encoding allows for some dif
 
 The combining characters are a good example. The usage example above shows two strings that look identical on my system: "piñata" and "piñata". Only if I examine the bytes of those strings can I see that the second one uses 0x6e (n) and the UTF-8 "combining tilde" character 0x0303 ( ̃) to create the Spanish eñe. The first uses the single 0xf1 (ñ) "precomposed character".
 
-Many combining characters aren't allowed in IDN domain registrations because they would provide a way to register names that are visually indistinguishable but comprised of different bytes, making things confusing for online piñata shopping. This is similar to the general problem of homoglyphs in the DNS. Unfortunately homoglyphs can still be used in various underhanded ways in domain names and this tool could be useful to examine suspect strings.
+Many combining characters aren't allowed in IDN domain registrations because they would provide a way to register names that are visually indistinguishable but comprised of different bytes, making things confusing for online piñata shopping. This is an example of general problem of homoglyphs in the DNS. Many combining characters are disallowed in the INDA specs. Unfortunately homoglyphs can still be used in various underhanded ways in domain names and this tool could be useful to examine suspect strings.
+
+Picking on Google:
+
+```shell
+$ wtutf -t www.ցooցlе.com 
+   punycode:	www.xn--ool-tdd07nca.com
+total bytes:	17
+ characters:	14
+----------------------------------
+       code point |  bytes (len)
+  w:         0x77 |       77 (1) | 
+  w:         0x77 |       77 (1) | 
+  w:         0x77 |       77 (1) | 
+  .:         0x2e |       2e (1) | 
+  ց:       0x0581 |     d681 (2) | 
+  o:         0x6f |       6f (1) | 
+  o:         0x6f |       6f (1) | 
+  ց:       0x0581 |     d681 (2) | 
+  l:         0x6c |       6c (1) | 
+  е:       0x0435 |     d0b5 (2) | 
+  .:         0x2e |       2e (1) | 
+  c:         0x63 |       63 (1) | 
+  o:         0x6f |       6f (1) | 
+  m:         0x6d |       6d (1) | 
+  ```
+
+The 0x0581 (ց) and 0x0435 (е) look slightly different from 'g' and 'e' on my system, but they could easily go unnoticed in many contexts. That domain should be blocked by common browser 'confusables' checking - but it's not blocked by the current version of Chrome.
 
 This program shows what went into strings that look similar but aren't identical. It is also useful if you need to troubleshoot punycode conversion.
 

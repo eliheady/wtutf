@@ -27,46 +27,59 @@ they do not match!
 Huh? But they look the same!?
 
 ```shell
-$ wtutf -s $PINATA1
-total bytes:    8
-characters:     7
-punycode:       could not punycode-convert input
-      code point | bytes | conversion rules violated
-  p:        0x70 |  (1)  | 
-  i:        0x69 |  (1)  | 
-  n:        0x6e |  (1)  | 
-  ◌̃:      0x0303 |  (2)  | CheckJoiners (RFC 5892), ValidateForRegistration (RFC 5891), ValidateLabels (RFC 5891), UseSTD3ASCIIRules (RFC 1034, 5891, UTS 46)
-  a:        0x61 |  (1)  | 
-  t:        0x74 |  (1)  | 
-  a:        0x61 |  (1)  |  
+$ wtutf -ts $PINATA1
+could not punycode-convert input
+total bytes:	8
+ characters:	7
+----------------------------------
+       code point |  bytes (len) | conversion rules violated
+  p:         0x70 |       70 (1) | 
+  i:         0x69 |       69 (1) | 
+  n:         0x6e |       6e (1) | 
+  ◌̃:       0x0303 |     cc83 (2) | CheckJoiners (RFC 5892), ValidateForRegistration (RFC 5891), ValidateLabels (RFC 5891), UseSTD3ASCIIRules (RFC 1034, 5891, UTS 46)
+  a:         0x61 |       61 (1) | 
+  t:         0x74 |       74 (1) | 
+  a:         0x61 |       61 (1) | 
 
-$ wtutf -s $PINATA2
-total bytes:    7
-characters:     6
-punycode:       xn--piata-pta
-      code point | bytes 
-  p:        0x70 |  (1) 
-  i:        0x69 |  (1) 
-  ñ:        0xf1 |  (2) 
-  a:        0x61 |  (1) 
-  t:        0x74 |  (1) 
-  a:        0x61 |  (1) 
+$ wtutf -ts $PINATA2
+   punycode:	xn--piata-pta
+total bytes:	7
+ characters:	6
+----------------------------------
+       code point |  bytes (len)
+  p:         0x70 |       70 (1) | 
+  i:         0x69 |       69 (1) | 
+  ñ:       0x00f1 |     c3b1 (2) | 
+  a:         0x61 |       61 (1) | 
+  t:         0x74 |       74 (1) | 
+  a:         0x61 |       61 (1) |
 ```
+
+Decode punycode strings
+
+```shell
+$ wtutf -p xn--piata-pta
+   punycode:	xn--piata-pta
+      utf-8:	piñata
+total bytes:	7
+ characters:	6
+ ```
 
 Care is taken to avoid echoing control characters in the output
 
 ```shell
-$ wtutf -s "$(printf '🔔bell\u07')"  
-total bytes:    9
-characters:     6
-punycode:       could not punycode-convert input
-      code point | bytes | conversion rules violated
-  🔔:   0x01f514 |  (4)  | 
-  b:        0x62 |  (1)  | 
-  e:        0x65 |  (1)  | 
-  l:        0x6c |  (1)  | 
-  l:        0x6c |  (1)  | 
- ^G:        0x07 |  (1)  | ValidateForRegistration (RFC 5891)
+$ /wtutf -ts "$(printf '🔔bell\u07')"  
+could not punycode-convert input
+total bytes:	9
+ characters:	6
+----------------------------------
+       code point |  bytes (len) | conversion rules violated
+ 🔔:   0x0001f514 | f09f9494 (4) | 
+  b:         0x62 |       62 (1) | 
+  e:         0x65 |       65 (1) | 
+  l:         0x6c |       6c (1) | 
+  l:         0x6c |       6c (1) | 
+ ^G:         0x07 |       07 (1) | ValidateForRegistration (RFC 5891)
 ```
 
 ### Why make this?

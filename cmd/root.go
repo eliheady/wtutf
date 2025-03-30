@@ -73,7 +73,7 @@ func canPunyConvert(s string, rules []idna.Option) bool {
 
 // enumerateErrors takes a rune, checks several punycode conversion rules and
 // reports the failures as a single string
-func enumerateErrors(r rune) string {
+func enumerateErrors(r rune) []string {
 	rules := map[string][]idna.Option{
 		"CheckBidi (RFC 5893)":                       {idna.BidiRule()},
 		"CheckJoiners (RFC 5892)":                    {idna.CheckJoiners(true)},
@@ -91,7 +91,7 @@ func enumerateErrors(r rune) string {
 		}
 	}
 
-	return strings.Join(allErrors, ", ")
+	return allErrors
 
 }
 
@@ -140,13 +140,16 @@ func politePrint(r rune) string {
 	return string(r)
 }
 
+type RuneCache struct {
+	Printable string
+	Padded    string
+	Errors    []string
+}
+
 func processInput(cmd *cobra.Command, ustring string) string {
 
 	flags := cmd.Flags()
 	var out string
-
-	out += fmt.Sprintf("total bytes:\t%d\n", len(ustring))
-	out += fmt.Sprintf("characters:\t%d\n", utf8.RuneCountInString(ustring))
 
 	rules := []idna.Option{
 		idna.BidiRule(),
@@ -159,6 +162,12 @@ func processInput(cmd *cobra.Command, ustring string) string {
 			idna.StrictDomainName(true),
 		)
 	}
+
+	// todo: seperate accumulation of output from
+	// formatting, delegate to a printing function
+
+	out += fmt.Sprintf("total bytes:\t%d\n", len(ustring))
+	out += fmt.Sprintf("characters:\t%d\n", utf8.RuneCountInString(ustring))
 
 	var converted bool
 	out += "punycode:\t"
@@ -176,23 +185,38 @@ func processInput(cmd *cobra.Command, ustring string) string {
 	}
 	out += header + "\n"
 
+	// cache of rune validation and error enumeration
+	runeCache := map[rune]RuneCache{}
+
 	for _, r := range ustring {
-		// todo: implement caching of the rune validation and error enumeration
-		moreErrors := ""
-		var padded string
-		printable := fmt.Sprintf("% 3s", politePrint(r))
-		switch {
-		case r > 0xFFFF:
-			padded = fmt.Sprintf("%#06x", r)
-		case r > 0xFF:
-			padded = fmt.Sprintf("%#04x", r)
-		default:
-			padded = fmt.Sprintf("%#02x", r)
+		moreErrors := []string{}
+		var padded, printable string
+		if rc, ok := runeCache[r]; ok {
+			printable = rc.Printable
+			padded = rc.Padded
+			moreErrors = rc.Errors
+		} else {
+			printable = fmt.Sprintf("% 3s", politePrint(r))
+
+			// pad the rune value with leading zeroes for every byte
+			padded = fmt.Sprintf("%#0*x", (utf8.RuneLen(r) * 2), r)
+
+			if !converted {
+				// only check the individual runes if the whole string
+				// has failed the punycode conversion.
+				moreErrors = enumerateErrors(r)
+			}
+			runeCache[r] = RuneCache{
+				Printable: printable,
+				Padded:    padded,
+				Errors:    moreErrors,
+			}
 		}
-		if !converted {
-			moreErrors = fmt.Sprintf(" | %s", enumerateErrors(r))
-		}
-		out += fmt.Sprintf("%s:\t% 8s |  (%d) %s\n", printable, padded, utf8.RuneLen(r), moreErrors)
+
+		// todo: makeLine ...
+		// out += makeLine(printable, padded, utf8.RuneLen(r), errors)
+		errors := fmt.Sprintf(" | %s", strings.Join(moreErrors, ", "))
+		out += fmt.Sprintf("%s:\t% 8s |  (%d) %s\n", printable, padded, utf8.RuneLen(r), errors)
 	}
 
 	return out

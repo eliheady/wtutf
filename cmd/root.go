@@ -53,9 +53,10 @@ func Execute() {
 }
 
 func init() {
-	var strict, fromPuny bool
+	var strict, fromPuny, table bool
 	rootCmd.PersistentFlags().BoolVarP(&strict, "strict", "s", false, "Set strict punycode conversion rules")
 	rootCmd.PersistentFlags().BoolVarP(&fromPuny, "puny", "p", false, "Convert from punycode")
+	rootCmd.PersistentFlags().BoolVarP(&table, "table", "t", false, "Show table of all included unicode characters")
 }
 
 // toPuny takes a string and a slice of []idna.Option rules and calls
@@ -198,58 +199,61 @@ func processInput(cmd *cobra.Command, ustring string) string {
 	}
 	out += fmt.Sprintf("total bytes:\t%d\n", len(ustring))
 	out += fmt.Sprintf(" characters:\t%d\n", utf8.RuneCountInString(ustring))
-	out += "----------------------------------\n"
 
-	header := []string{
-		fmt.Sprintf("% 17s", "code point"),
-		fmt.Sprintf("% 12s", "bytes (len)"),
-	}
-	if !punyConverted {
-		header = append(header, "conversion rules violated")
-	}
-	out += strings.Join(header, " | ") + "\n"
+	if includeTable, _ := flags.GetBool("table"); includeTable { // ok to discard err if flag was not set
+		out += "----------------------------------\n"
 
-	// cache of rune validation and error enumeration
-	runeCache := map[rune]RuneCache{}
-
-	for _, r := range ustring {
-		runeErrors := []string{}
-		var padded, runeBytes, printable string
-		if rc, ok := runeCache[r]; ok {
-			printable = rc.Printable
-			padded = rc.Padded
-			runeBytes = rc.Bytes
-			runeErrors = rc.Errors
-		} else {
-
-			runeWide := width.LookupRune(r).Kind()
-			if runeWide == width.EastAsianWide || runeWide == width.EastAsianFullwidth {
-				printable = fmt.Sprintf(" %-1s", politePrint(r)) // wide characters
-			} else {
-				printable = fmt.Sprintf("% 3s", politePrint(r))
-			}
-
-			// pad the rune value with leading zeroes for every byte
-			padded = fmt.Sprintf("%#0*x", (utf8.RuneLen(r) * 2), r)
-
-			runeBytes = hex.EncodeToString([]byte(string(r)))
-
-			if !punyConverted {
-				// only check the individual runes if the whole string
-				// has failed the punycode conversion.
-				runeErrors = enumerateErrors(r)
-			}
-			runeCache[r] = RuneCache{
-				Printable: printable,
-				Padded:    padded,
-				Bytes:     runeBytes,
-				Errors:    runeErrors,
-			}
+		header := []string{
+			fmt.Sprintf("% 17s", "code point"),
+			fmt.Sprintf("% 12s", "bytes (len)"),
 		}
+		if !punyConverted {
+			header = append(header, "conversion rules violated")
+		}
+		out += strings.Join(header, " | ") + "\n"
 
-		bytesColumn := fmt.Sprintf("% 8s (%d)", runeBytes, utf8.RuneLen(r))
-		errors := strings.Join(runeErrors, ", ")
-		out += fmt.Sprintf("%s:% 13s | %s | %s\n", printable, padded, bytesColumn, errors)
+		// cache of rune validation and error enumeration
+		runeCache := map[rune]RuneCache{}
+
+		for _, r := range ustring {
+			runeErrors := []string{}
+			var padded, runeBytes, printable string
+			if rc, ok := runeCache[r]; ok {
+				printable = rc.Printable
+				padded = rc.Padded
+				runeBytes = rc.Bytes
+				runeErrors = rc.Errors
+			} else {
+
+				runeWide := width.LookupRune(r).Kind()
+				if runeWide == width.EastAsianWide || runeWide == width.EastAsianFullwidth {
+					printable = fmt.Sprintf(" %-1s", politePrint(r)) // wide characters
+				} else {
+					printable = fmt.Sprintf("% 3s", politePrint(r))
+				}
+
+				// pad the rune value with leading zeroes for every byte
+				padded = fmt.Sprintf("%#0*x", (utf8.RuneLen(r) * 2), r)
+
+				runeBytes = hex.EncodeToString([]byte(string(r)))
+
+				if !punyConverted {
+					// only check the individual runes if the whole string
+					// has failed the punycode conversion.
+					runeErrors = enumerateErrors(r)
+				}
+				runeCache[r] = RuneCache{
+					Printable: printable,
+					Padded:    padded,
+					Bytes:     runeBytes,
+					Errors:    runeErrors,
+				}
+			}
+
+			bytesColumn := fmt.Sprintf("% 8s (%d)", runeBytes, utf8.RuneLen(r))
+			errors := strings.Join(runeErrors, ", ")
+			out += fmt.Sprintf("%s:% 13s | %s | %s\n", printable, padded, bytesColumn, errors)
+		}
 	}
 
 	return out

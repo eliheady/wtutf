@@ -32,7 +32,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"golang.org/x/net/idna"
-	"golang.org/x/text/width"
 )
 
 var rootCmd = &cobra.Command{
@@ -148,8 +147,45 @@ func politePrint(r rune) string {
 		return " "
 	case 0x2066 <= r && r <= 0x2069: // directional isolates (LRI, RLI, FSI, PDI)
 		return " "
+	case r == 0x200d || r == 0x2060: // joiners
+		return " "
+	case 0xFE00 <= r && r <= 0xFE0F: // variation selectors
+		return " "
 	}
 	return string(r)
+}
+
+// toString takes a rune returns a string with padding appropriate for the character width
+func toPaddedString(r rune, defaultPad int) (out string) {
+	defaultPattern := fmt.Sprintf("%% %ds", defaultPad)
+	widePadLeft := fmt.Sprintf("%% %ds", defaultPad-2)
+	widePattern := fmt.Sprintf("%s%%-1s", widePadLeft)
+	// Unicode blocks containing 'wide' characters
+	// this list is not exhaustive
+	cjkUnified := 0x4E00 <= r && r <= 0x9FFF
+	cjkCompatibility := 0xF900 <= r && r <= 0xFAFF
+	blockQuotes := r == 0x2329 || r == 0x232A || (0x3000 <= r && r <= 0x303F)
+	hiragana := 0x3040 <= r && r <= 0x309F
+	katakana := 0x30A0 <= r && r <= 0x30FF
+	bopomofo := 0x3105 <= r && r <= 0x312F
+	hangulCompat := 0x3130 <= r && r <= 0x318F
+	kanbun := 0x3190 <= r && r <= 0x319F
+	bopomofoExt := 0x31A0 <= r && r <= 0x31B7
+	enclosedCJK := 0x3200 <= r && r < 0x32FF
+	squareHiragana := 0x32FF <= r && r <= 0x337F
+	hangul := 0xAC00 <= r && r <= 0xD7AF
+	fullwidth := 0xFF00 <= r && r <= 0xFFEF
+	emoji := 0x1F600 <= r && r <= 0x1F64F
+	symbols := 0x1F300 <= r && r <= 0x1F5FF
+	transport := 0x1F680 <= r && r <= 0x1F6FF
+	symbolsExtA := 0x1FA70 <= r && r <= 0x1FAFF
+	switch {
+	case cjkUnified, cjkCompatibility, blockQuotes, hiragana, katakana, bopomofo, hangulCompat, kanbun, squareHiragana, hangul, bopomofoExt, enclosedCJK, fullwidth, emoji, symbols, transport, symbolsExtA:
+		out = fmt.Sprintf(widePattern, " ", string(r))
+	default:
+		out = fmt.Sprintf(defaultPattern, politePrint(r))
+	}
+	return
 }
 
 type RuneCache struct {
@@ -225,12 +261,7 @@ func processInput(cmd *cobra.Command, ustring string) string {
 				runeErrors = rc.Errors
 			} else {
 
-				runeWide := width.LookupRune(r).Kind()
-				if runeWide == width.EastAsianWide || runeWide == width.EastAsianFullwidth {
-					printable = fmt.Sprintf(" %-1s", politePrint(r)) // wide characters
-				} else {
-					printable = fmt.Sprintf("% 3s", politePrint(r))
-				}
+				printable = toPaddedString(r, 3)
 
 				// pad the rune value with leading zeroes for every byte
 				padded = fmt.Sprintf("%#0*x", (utf8.RuneLen(r) * 2), r)

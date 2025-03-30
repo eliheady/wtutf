@@ -32,6 +32,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"golang.org/x/net/idna"
+	"golang.org/x/text/width"
 )
 
 var rootCmd = &cobra.Command{
@@ -182,7 +183,7 @@ func processInput(cmd *cobra.Command, ustring string) string {
 
 	header := []string{
 		fmt.Sprintf("% 17s", "code point"),
-		fmt.Sprintf("% 10s", "bytes (len)"),
+		fmt.Sprintf("% 12s", "bytes (len)"),
 	}
 	if !punyConverted {
 		header = append(header, "conversion rules violated")
@@ -201,7 +202,13 @@ func processInput(cmd *cobra.Command, ustring string) string {
 			runeBytes = rc.Bytes
 			runeErrors = rc.Errors
 		} else {
-			printable = fmt.Sprintf("% 3s", politePrint(r))
+
+			runeWide := width.LookupRune(r).Kind()
+			if runeWide == width.EastAsianWide || runeWide == width.EastAsianFullwidth {
+				printable = fmt.Sprintf(" %-1s", politePrint(r)) // wide characters
+			} else {
+				printable = fmt.Sprintf("% 3s", politePrint(r))
+			}
 
 			// pad the rune value with leading zeroes for every byte
 			padded = fmt.Sprintf("%#0*x", (utf8.RuneLen(r) * 2), r)
@@ -221,7 +228,7 @@ func processInput(cmd *cobra.Command, ustring string) string {
 			}
 		}
 
-		bytesColumn := fmt.Sprintf("% 6s (%d)", runeBytes, utf8.RuneLen(r))
+		bytesColumn := fmt.Sprintf("% 8s (%d)", runeBytes, utf8.RuneLen(r))
 		errors := strings.Join(runeErrors, ", ")
 		out += fmt.Sprintf("%s:% 13s | %s | %s\n", printable, padded, bytesColumn, errors)
 	}

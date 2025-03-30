@@ -92,7 +92,7 @@ The combining characters are a good example. The usage example above shows two s
 
 Many combining characters aren't allowed in IDN domain registrations because they would provide a way to register names that are visually indistinguishable but comprised of different bytes, making things confusing for online piñata shopping. This is an example of general problem of homoglyphs in the DNS. Many combining characters are disallowed in the INDA specs. Unfortunately homoglyphs can still be used in various underhanded ways in domain names and this tool could be useful to examine suspect strings.
 
-Using what looks like Google's URL, "www.ցooցlе.com":
+Picking on Google:
 
 ```shell
 $ wtutf -t www.ցooցlе.com 
@@ -114,10 +114,10 @@ total bytes:	17
   .:         0x2e |       2e (1) | 
   c:         0x63 |       63 (1) | 
   o:         0x6f |       6f (1) | 
-  m:         0x6d |       6d (1) |
+  m:         0x6d |       6d (1) | 
   ```
 
-The 0x0581 (ց) and 0x0435 (е) look slightly different from 'g' and 'e' on my system, but they could easily go unnoticed in many contexts. Luckily that particular domain won't appear in the public DNS and should be blocked by common browser 'confusables' checking - but it's not blocked by the current version of Chrome.
+The 0x0581 (ց) and 0x0435 (е) look slightly different from 'g' and 'e' on my system, but they could easily go unnoticed in many contexts. That domain should be blocked by common browser 'confusables' checking - but it's not blocked by the current version of Chrome.
 
 This program shows what went into strings that look similar but aren't identical. It is also useful if you need to troubleshoot punycode conversion.
 

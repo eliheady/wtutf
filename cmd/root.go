@@ -53,8 +53,9 @@ func Execute() {
 }
 
 func init() {
-	var strict bool
+	var strict, fromPuny bool
 	rootCmd.PersistentFlags().BoolVarP(&strict, "strict", "s", false, "Set strict punycode conversion rules")
+	rootCmd.PersistentFlags().BoolVarP(&fromPuny, "puny", "p", false, "Convert from punycode")
 }
 
 // toPuny takes a string and a slice of []idna.Option rules and calls
@@ -64,6 +65,14 @@ func toPuny(s string, rules []idna.Option) (string, error) {
 		rules...,
 	)
 	return punyRules.ToASCII(s)
+}
+
+// fromPuny takes a punycode string and returns the decoded UTF-8 string
+func fromPuny(s string, rules []idna.Option) (string, error) {
+	punyRules := idna.New(
+		rules...,
+	)
+	return punyRules.ToUnicode(s)
 }
 
 // canPunyConvert takes a rune and a slice of []idna.Option rules and attempts
@@ -169,17 +178,27 @@ func processInput(cmd *cobra.Command, ustring string) string {
 	// todo: seperate accumulation of output from
 	// formatting, delegate to a printing function
 
-	out += fmt.Sprintf("total bytes:\t%d\n", len(ustring))
-	out += fmt.Sprintf("characters:\t%d\n", utf8.RuneCountInString(ustring))
-
 	var punyConverted bool
-	out += "punycode:\t"
-	if punycode, err := toPuny(ustring, rules); err == nil {
-		punyConverted = true
-		out += punycode + "\n"
+
+	if convertFromPuny, _ := flags.GetBool("puny"); convertFromPuny { // ok to discard err if flag was not set
+		if utfString, err := fromPuny(ustring, rules); err == nil {
+			out += "   punycode:\t" + ustring + "\n"
+			out += "      utf-8:\t" + utfString + "\n"
+			ustring = utfString
+		} else {
+			out += "could not decode punycode input\n"
+		}
 	} else {
-		out += "could not punycode-convert input\n"
+		if punycode, err := toPuny(ustring, rules); err == nil {
+			punyConverted = true
+			out += "   punycode:\t" + punycode + "\n"
+		} else {
+			out += "could not punycode-convert input\n"
+		}
 	}
+	out += fmt.Sprintf("total bytes:\t%d\n", len(ustring))
+	out += fmt.Sprintf(" characters:\t%d\n", utf8.RuneCountInString(ustring))
+	out += "----------------------------------\n"
 
 	header := []string{
 		fmt.Sprintf("% 17s", "code point"),

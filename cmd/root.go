@@ -24,6 +24,7 @@ SOFTWARE.
 package cmd
 
 import (
+	"encoding/hex"
 	"fmt"
 	"os"
 	"strings"
@@ -143,6 +144,7 @@ func politePrint(r rune) string {
 type RuneCache struct {
 	Printable string
 	Padded    string
+	Bytes     string
 	Errors    []string
 }
 
@@ -169,54 +171,59 @@ func processInput(cmd *cobra.Command, ustring string) string {
 	out += fmt.Sprintf("total bytes:\t%d\n", len(ustring))
 	out += fmt.Sprintf("characters:\t%d\n", utf8.RuneCountInString(ustring))
 
-	var converted bool
+	var punyConverted bool
 	out += "punycode:\t"
 	if punycode, err := toPuny(ustring, rules); err == nil {
-		converted = true
-		out += punycode
+		punyConverted = true
+		out += punycode + "\n"
 	} else {
-		out += "could not punycode-convert input"
+		out += "could not punycode-convert input\n"
 	}
-	out += "\n"
 
-	header := "      code point | bytes "
-	if !converted {
-		header += "| conversion rules violated"
+	header := []string{
+		fmt.Sprintf("% 17s", "code point"),
+		fmt.Sprintf("% 10s", "bytes (len)"),
 	}
-	out += header + "\n"
+	if !punyConverted {
+		header = append(header, "conversion rules violated")
+	}
+	out += strings.Join(header, " | ") + "\n"
 
 	// cache of rune validation and error enumeration
 	runeCache := map[rune]RuneCache{}
 
 	for _, r := range ustring {
-		moreErrors := []string{}
-		var padded, printable string
+		runeErrors := []string{}
+		var padded, runeBytes, printable string
 		if rc, ok := runeCache[r]; ok {
 			printable = rc.Printable
 			padded = rc.Padded
-			moreErrors = rc.Errors
+			runeBytes = rc.Bytes
+			runeErrors = rc.Errors
 		} else {
 			printable = fmt.Sprintf("% 3s", politePrint(r))
 
 			// pad the rune value with leading zeroes for every byte
 			padded = fmt.Sprintf("%#0*x", (utf8.RuneLen(r) * 2), r)
 
-			if !converted {
+			runeBytes = hex.EncodeToString([]byte(string(r)))
+
+			if !punyConverted {
 				// only check the individual runes if the whole string
 				// has failed the punycode conversion.
-				moreErrors = enumerateErrors(r)
+				runeErrors = enumerateErrors(r)
 			}
 			runeCache[r] = RuneCache{
 				Printable: printable,
 				Padded:    padded,
-				Errors:    moreErrors,
+				Bytes:     runeBytes,
+				Errors:    runeErrors,
 			}
 		}
 
-		// todo: makeLine ...
-		// out += makeLine(printable, padded, utf8.RuneLen(r), errors)
-		errors := fmt.Sprintf(" | %s", strings.Join(moreErrors, ", "))
-		out += fmt.Sprintf("%s:\t% 8s |  (%d) %s\n", printable, padded, utf8.RuneLen(r), errors)
+		bytesColumn := fmt.Sprintf("% 6s (%d)", runeBytes, utf8.RuneLen(r))
+		errors := strings.Join(runeErrors, ", ")
+		out += fmt.Sprintf("%s:% 13s | %s | %s\n", printable, padded, bytesColumn, errors)
 	}
 
 	return out

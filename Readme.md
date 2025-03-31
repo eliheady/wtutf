@@ -93,7 +93,7 @@ The Unicode Transformation Format – 8-bit (UTF-8) encoding allows for some dif
 
 The combining characters are a good example. The usage example above shows two strings that look identical on my system: "piñata" and "piñata". Only if I examine the bytes of those strings can I see that the second one uses 0x6e (n) and the UTF-8 "combining tilde" character 0x0303 ( ̃) to create the Spanish eñe. The first uses the single 0xf1 (ñ) "precomposed character".
 
-Many combining characters aren't allowed in IDN domain registrations because they would provide a way to register names that are visually indistinguishable but comprised of different bytes, making things confusing for online piñata shopping. This is an example of general problem of homoglyphs in the DNS. Though combining characters are disallowed in the INDA specs, homoglyphs can still be used in various underhanded ways in and this tool could be useful to examine suspect strings.
+Many combining characters aren't allowed in IDN domain registrations because they would provide a way to register names that are visually indistinguishable but comprised of different bytes, making things confusing for online piñata shopping. This is an example of the general problem of homoglyphs in the DNS. Though some combining characters are disallowed in the INDA specs, mixed-script homoglyphs can still be used and this tool could be useful to examine suspect strings.
 
 Use the `--check`,`-c` flag to get a simple ok/caution validation of a string:
 

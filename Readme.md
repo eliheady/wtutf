@@ -117,7 +117,7 @@ total bytes:	17
   m:         0x6d |       6d (1) | 
   ```
 
-The 0x0581 (ց) and 0x0435 (е) look slightly different from 'g' and 'e' on my system, but they could easily go unnoticed in many contexts. That domain should be blocked by common browser 'confusables' checking - but it's not blocked by the current version of Chrome.
+The 0x0581 (ց) and 0x0435 (е) look slightly different from 'g' and 'e' on my system, but they could easily go unnoticed in many contexts.
 
 This program shows what went into strings that look similar but aren't identical. It is also useful if you need to troubleshoot punycode conversion.
 

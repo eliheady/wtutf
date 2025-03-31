@@ -68,10 +68,13 @@ total bytes:	7
 Care is taken to avoid echoing control characters in the output
 
 ```shell
-$ /wtutf -ts "$(printf '🔔bell\u07')"  
+$ wtutf -trs "$(printf '🔔bell\u07')"  
 could not punycode-convert input
-total bytes:	9
- characters:	6
+   total bytes:	9
+    characters:	6
+unicode ranges:
+    Common: 2
+    Latin: 4
 ----------------------------------
        code point |  bytes (len) | conversion rules violated
  🔔:   0x0001f514 | f09f9494 (4) | 
@@ -90,15 +93,33 @@ The Unicode Transformation Format – 8-bit (UTF-8) encoding allows for some dif
 
 The combining characters are a good example. The usage example above shows two strings that look identical on my system: "piñata" and "piñata". Only if I examine the bytes of those strings can I see that the second one uses 0x6e (n) and the UTF-8 "combining tilde" character 0x0303 ( ̃) to create the Spanish eñe. The first uses the single 0xf1 (ñ) "precomposed character".
 
-Many combining characters aren't allowed in IDN domain registrations because they would provide a way to register names that are visually indistinguishable but comprised of different bytes, making things confusing for online piñata shopping. This is an example of general problem of homoglyphs in the DNS. Many combining characters are disallowed in the INDA specs. Unfortunately homoglyphs can still be used in various underhanded ways in domain names and this tool could be useful to examine suspect strings.
+Many combining characters aren't allowed in IDN domain registrations because they would provide a way to register names that are visually indistinguishable but comprised of different bytes, making things confusing for online piñata shopping. This is an example of general problem of homoglyphs in the DNS. Though combining characters are disallowed in the INDA specs, homoglyphs can still be used in various underhanded ways in and this tool could be useful to examine suspect strings.
 
-Picking on Google:
+Use the `--check`,`-c` flag to get a simple ok/caution validation of a string:
 
 ```shell
-$ wtutf -t www.ցooցlе.com 
-   punycode:	www.xn--ool-tdd07nca.com
-total bytes:	17
- characters:	14
+$ wtutf -c www.ցooցlе.com || echo 'WARNING'
+WARNING
+```
+
+And to see a summary of the Unicode script families found in the input, use `--show-ranges`,`-r`:
+```shell
+$ wtutf --check --show-ranges www.ցooցlе.com
+Cyrillic: 1
+Latin: 9
+Armenian: 2
+```
+
+```shell
+$ wtutf -tr www.ցooցlе.com             
+      punycode:	www.xn--ool-tdd07nca.com
+   total bytes:	17
+    characters:	14
+unicode ranges:
+    Latin: 9
+    Common: 2
+    Armenian: 2
+    Cyrillic: 1
 ----------------------------------
        code point |  bytes (len)
   w:         0x77 |       77 (1) | 

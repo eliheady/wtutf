@@ -52,8 +52,9 @@ func Execute() {
 }
 
 func init() {
-	var check, strict, fromPuny, table bool
+	var check, showRanges, strict, fromPuny, table bool
 	rootCmd.PersistentFlags().BoolVarP(&check, "check", "c", false, "Check whether the string contains characters from outside of the current locale")
+	rootCmd.PersistentFlags().BoolVarP(&showRanges, "show-ranges", "r", false, "Show the Unicode script ranges included in the string")
 	rootCmd.PersistentFlags().BoolVarP(&strict, "strict", "s", false, "Set strict punycode conversion rules")
 	rootCmd.PersistentFlags().BoolVarP(&fromPuny, "puny", "p", false, "Convert from punycode")
 	rootCmd.PersistentFlags().BoolVarP(&table, "table", "t", false, "Show table of all included unicode characters")
@@ -62,19 +63,20 @@ func init() {
 func parseFlags(cmd *cobra.Command, args []string) string {
 	flags := cmd.Flags()
 
+	showRanges, _ := flags.GetBool("show-ranges")
+	strict, _ := flags.GetBool("strict")
+	punyDecode, _ := flags.GetBool("puny")
+	table, _ := flags.GetBool("table")
+
 	if compare, _ := flags.GetBool("check"); compare {
 		var checkResult int
-		if checkMultipleRange(args[0]) {
+		if checkMultipleRange(showRanges, args[0]) {
 			checkResult = 1
 		}
 		os.Exit(checkResult)
 	}
 
-	strict, _ := flags.GetBool("strict")
-	punyDecode, _ := flags.GetBool("puny")
-	table, _ := flags.GetBool("table")
-
-	return processInput(args[0], strict, punyDecode, table)
+	return processInput(args[0], showRanges, strict, punyDecode, table)
 }
 
 // toString takes a rune returns a string with padding appropriate for the character width
@@ -117,7 +119,7 @@ type RuneCache struct {
 	Errors    []string
 }
 
-func processInput(ustring string, strict, punyDecode, table bool) string {
+func processInput(ustring string, showRanges, strict, punyDecode, table bool) string {
 
 	rules := []idna.Option{
 		idna.BidiRule(),
@@ -156,10 +158,12 @@ func processInput(ustring string, strict, punyDecode, table bool) string {
 	out += fmt.Sprintf("   total bytes:\t%d\n", len(ustring))
 	out += fmt.Sprintf("    characters:\t%d\n", utf8.RuneCountInString(ustring))
 
-	ranges := listRanges(ustring)
-	out += "unicode ranges:\n"
-	for i, count := range ranges {
-		out += fmt.Sprintf("    %s: %d\n", i, count)
+	if showRanges {
+		ranges := listRanges(ustring)
+		out += "unicode ranges:\n"
+		for i, count := range ranges {
+			out += fmt.Sprintf("    %s: %d\n", i, count)
+		}
 	}
 
 	if table {

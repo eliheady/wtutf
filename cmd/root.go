@@ -40,7 +40,7 @@ var rootCmd = &cobra.Command{
 	Short: "A simple utility to help me out of my ASCII-centric shell",
 	Long:  `This program just prints out the Unicode code points of the string you feed into it. It can also show you the punycode conversion of your string, or failure reasons if conversion isn't possible.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Print(processInput(cmd, args[0]))
+		fmt.Print(parseFlags(cmd, args))
 	},
 }
 
@@ -52,10 +52,39 @@ func Execute() {
 }
 
 func init() {
-	var strict, fromPuny, table bool
+	var check, strict, fromPuny, table bool
+	rootCmd.PersistentFlags().BoolVarP(&check, "check", "c", false, "Check whether the string contains characters from outside of the current locale")
 	rootCmd.PersistentFlags().BoolVarP(&strict, "strict", "s", false, "Set strict punycode conversion rules")
 	rootCmd.PersistentFlags().BoolVarP(&fromPuny, "puny", "p", false, "Convert from punycode")
 	rootCmd.PersistentFlags().BoolVarP(&table, "table", "t", false, "Show table of all included unicode characters")
+
+}
+
+func parseFlags(cmd *cobra.Command, args []string) string {
+	flags := cmd.Flags()
+
+	if compare, _ := flags.GetBool("check"); compare {
+		os.Exit(checkString(args[0]))
+	}
+
+	strict, _ := flags.GetBool("strict")
+	punyDecode, _ := flags.GetBool("puny")
+	table, _ := flags.GetBool("table")
+
+	return processInput(args[0], strict, punyDecode, table)
+
+}
+
+// checkString takes a string and returns a bool indicating whether the string
+// contains any characters from outside the locale
+func checkString(ustring string) int {
+	// implement a range or distance check:
+	// each rune is within the range of Unicode block for the locale, or
+	// each rune is less than maximum distance from the others
+
+	_ = ustring // quiet linter complaints
+	fmt.Println("checkString is not implemented")
+	return -1
 }
 
 // toPuny takes a string and a slice of []idna.Option rules and calls
@@ -195,17 +224,14 @@ type RuneCache struct {
 	Errors    []string
 }
 
-func processInput(cmd *cobra.Command, ustring string) string {
-
-	flags := cmd.Flags()
-	var out string
+func processInput(ustring string, strict, punyDecode, table bool) string {
 
 	rules := []idna.Option{
 		idna.BidiRule(),
 		idna.CheckJoiners(true),
 		idna.ValidateLabels(true),
 	}
-	if strict, _ := flags.GetBool("strict"); strict { // ok to discard err if flag was not set
+	if strict {
 		rules = append(rules,
 			idna.ValidateForRegistration(),
 			idna.StrictDomainName(true),
@@ -215,9 +241,10 @@ func processInput(cmd *cobra.Command, ustring string) string {
 	// todo: seperate accumulation of output from
 	// formatting, delegate to a printing function
 
+	var out string
 	var punyConverted bool
 
-	if convertFromPuny, _ := flags.GetBool("puny"); convertFromPuny { // ok to discard err if flag was not set
+	if punyDecode { // ok to discard err if flag was not set
 		if utfString, err := fromPuny(ustring, rules); err == nil {
 			out += "   punycode:\t" + ustring + "\n"
 			out += "      utf-8:\t" + utfString + "\n"
@@ -236,7 +263,7 @@ func processInput(cmd *cobra.Command, ustring string) string {
 	out += fmt.Sprintf("total bytes:\t%d\n", len(ustring))
 	out += fmt.Sprintf(" characters:\t%d\n", utf8.RuneCountInString(ustring))
 
-	if includeTable, _ := flags.GetBool("table"); includeTable { // ok to discard err if flag was not set
+	if table {
 		out += "----------------------------------\n"
 
 		header := []string{

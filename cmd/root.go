@@ -64,7 +64,11 @@ func parseFlags(cmd *cobra.Command, args []string) string {
 	flags := cmd.Flags()
 
 	if compare, _ := flags.GetBool("check"); compare {
-		os.Exit(checkString(args[0]))
+		var checkResult int
+		if checkMultipleRange(args[0]) {
+			checkResult = 1
+		}
+		os.Exit(checkResult)
 	}
 
 	strict, _ := flags.GetBool("strict")
@@ -75,16 +79,35 @@ func parseFlags(cmd *cobra.Command, args []string) string {
 
 }
 
-// checkString takes a string and returns a bool indicating whether the string
-// contains any characters from outside the locale
-func checkString(ustring string) int {
-	// implement a range or distance check:
-	// each rune is within the range of Unicode block for the locale, or
-	// each rune is less than maximum distance from the others
+// listRanges takes a string and returns a map of Unicode range
+// names and the count of runes within that range
+func listRanges(ustring string) map[string]int {
+	rangeCounts := map[string]int{}
 
-	_ = ustring // quiet linter complaints
-	fmt.Println("checkString is not implemented")
-	return -1
+	for _, r := range ustring {
+		rangeCounts[FindRange(r)]++
+	}
+	return rangeCounts
+}
+
+// checkMultipleRange takes a string and determines whether the string
+// contains any characters from outside the predominant range.
+// Runes from the 'Common' range are ignored.
+func checkMultipleRange(ustring string) (multiRange bool) {
+	var ranges int
+	var out string
+	for i, count := range listRanges(ustring) {
+		if i == "Common" {
+			continue
+		}
+		ranges++
+		out += fmt.Sprintf("%s: %d\n", i, count)
+	}
+	if ranges > 1 {
+		multiRange = true
+		fmt.Print(out)
+	}
+	return
 }
 
 // toPuny takes a string and a slice of []idna.Option rules and calls
@@ -153,10 +176,10 @@ func politePrint(r rune) string {
 	case 0x0300 <= r && r <= 0x036F: // combining diacritical marks
 		return "  ◌" + string(r)
 	// filter control characters
+	// todo: replace these filters with ranges defined in unicode/table.go
 	// reasoning: terminal control sequences can do all sorts of damage to the
 	// output.  we will remove them and put in the caret notation for C0 and 'C1'
 	// for C1 unicode control characters
-	// todo: these filters are probably available in some form in the utf8 package
 	case int(r) < len(politeCharmap):
 		return politeCharmap[r] // C0 controls
 	case int(r) == 127:
@@ -246,8 +269,8 @@ func processInput(ustring string, strict, punyDecode, table bool) string {
 
 	if punyDecode { // ok to discard err if flag was not set
 		if utfString, err := fromPuny(ustring, rules); err == nil {
-			out += "   punycode:\t" + ustring + "\n"
-			out += "      utf-8:\t" + utfString + "\n"
+			out += "      punycode:\t" + ustring + "\n"
+			out += "         utf-8:\t" + utfString + "\n"
 			ustring = utfString
 		} else {
 			out += "could not decode punycode input\n"
@@ -255,13 +278,19 @@ func processInput(ustring string, strict, punyDecode, table bool) string {
 	} else {
 		if punycode, err := toPuny(ustring, rules); err == nil {
 			punyConverted = true
-			out += "   punycode:\t" + punycode + "\n"
+			out += "      punycode:\t" + punycode + "\n"
 		} else {
 			out += "could not punycode-convert input\n"
 		}
 	}
-	out += fmt.Sprintf("total bytes:\t%d\n", len(ustring))
-	out += fmt.Sprintf(" characters:\t%d\n", utf8.RuneCountInString(ustring))
+	out += fmt.Sprintf("   total bytes:\t%d\n", len(ustring))
+	out += fmt.Sprintf("    characters:\t%d\n", utf8.RuneCountInString(ustring))
+
+	ranges := listRanges(ustring)
+	out += "unicode ranges:\n"
+	for i, count := range ranges {
+		out += fmt.Sprintf("    %s: %d\n", i, count)
+	}
 
 	if table {
 		out += "----------------------------------\n"

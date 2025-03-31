@@ -16,7 +16,7 @@ func listRanges(ustring string) map[string]int {
 // checkMultipleRange takes a string and determines whether the string
 // contains characters from more than one range.
 // Runes from the 'Common' range are ignored.
-func checkMultipleRange(ustring string) (multiRange bool) {
+func checkMultipleRange(showRanges bool, ustring string) (multiRange bool) {
 	var ranges int
 	var out string
 	for i, count := range listRanges(ustring) {
@@ -24,7 +24,9 @@ func checkMultipleRange(ustring string) (multiRange bool) {
 			continue
 		}
 		ranges++
-		out += fmt.Sprintf("%s: %d\n", i, count)
+		if showRanges {
+			out += fmt.Sprintf("%s: %d\n", i, count)
+		}
 	}
 	if ranges > 1 {
 		multiRange = true

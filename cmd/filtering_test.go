@@ -13,7 +13,7 @@ func TestPolitePrint(t *testing.T) {
 		{
 			name: "Control character - NULL",
 			r:    0x00,
-			want: "^@",
+			want: "^?",
 		},
 		{
 			name: "Control character - DEL",
@@ -21,34 +21,44 @@ func TestPolitePrint(t *testing.T) {
 			want: "^?",
 		},
 		{
+			name: "C1 control - 0x9A",
+			r:    0x9A,
+			want: "^?",
+		},
+		{
 			name: "Combining diacritical mark",
 			r:    0x0301, // Combining acute accent
-			want: "  ◌́",
+			want: " ◌́",
+		},
+		{
+			name: "Combining diacritical mark, 2 chars",
+			r:    0x0361, // Double inverted breve
+			want: "◌͡◌",
 		},
 		{
 			name: "Deprecated format character",
 			r:    0x206F,
-			want: " ",
+			want: "^?",
 		},
 		{
 			name: "Directional override - LRE",
 			r:    0x202A,
-			want: " ",
+			want: "^?",
 		},
 		{
 			name: "Implicit directional mark - LRM",
 			r:    0x200E,
-			want: " ",
+			want: "^?",
 		},
 		{
 			name: "Joiner character - ZWJ",
 			r:    0x200D,
-			want: " ",
+			want: "^?",
 		},
 		{
 			name: "Variation selector",
 			r:    0xFE0F,
-			want: " ",
+			want: "^?",
 		},
 		{
 			name: "Printable ASCII character",
@@ -61,9 +71,9 @@ func TestPolitePrint(t *testing.T) {
 			want: "一",
 		},
 		{
-			name: "Emoji character",
-			r:    0x1F600, // Grinning face
-			want: "😀",
+			name: "Piñata emoji",
+			r:    0x1FA85,
+			want: "🪅",
 		},
 	}
 

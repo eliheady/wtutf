@@ -28,6 +28,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"unicode"
 	"unicode/utf8"
 
 	"github.com/spf13/cobra"
@@ -84,28 +85,17 @@ func toPaddedString(r rune, defaultPad int) (out string) {
 	defaultPattern := fmt.Sprintf("%% %ds", defaultPad)
 	widePadLeft := fmt.Sprintf("%% %ds", defaultPad-2)
 	widePattern := fmt.Sprintf("%s%%-1s", widePadLeft)
-	// Unicode blocks containing 'wide' characters
-	// this list is not exhaustive
-	cjkUnified := 0x4E00 <= r && r <= 0x9FFF
-	cjkCompatibility := 0xF900 <= r && r <= 0xFAFF
-	blockQuotes := r == 0x2329 || r == 0x232A || (0x3000 <= r && r <= 0x303F)
-	hiragana := 0x3040 <= r && r <= 0x309F
-	katakana := 0x30A0 <= r && r <= 0x30FF
-	bopomofo := 0x3105 <= r && r <= 0x312F
-	hangulCompat := 0x3130 <= r && r <= 0x318F
-	kanbun := 0x3190 <= r && r <= 0x319F
-	bopomofoExt := 0x31A0 <= r && r <= 0x31B7
-	enclosedCJK := 0x3200 <= r && r < 0x32FF
-	squareHiragana := 0x32FF <= r && r <= 0x337F
-	hangul := 0xAC00 <= r && r <= 0xD7AF
+	// Unicode blocks containing 'wide' or combining characters
 	fullwidth := 0xFF00 <= r && r <= 0xFFEF
-	emoji := 0x1F600 <= r && r <= 0x1F64F
-	symbols := 0x1F300 <= r && r <= 0x1F5FF
-	transport := 0x1F680 <= r && r <= 0x1F6FF
-	symbolsExtA := 0x1FA70 <= r && r <= 0x1FAFF
+	symbols := unicode.Is(unicode.Symbol, r)
+	wide := unicode.Is(unicode.Ideographic, r) || unicode.Is(unicode.Extender, r)
+	wide = wide || unicode.Is(unicode.Diacritic, r) || unicode.Is(unicode.Hangul, r)
+	wide = wide || unicode.Is(unicode.Bopomofo, r) || unicode.Is(unicode.Han, r)
+	wide = wide || unicode.Is(unicode.Hiragana, r) || unicode.Is(unicode.Katakana, r)
+	wide = wide || fullwidth || symbols
 	switch {
-	case cjkUnified, cjkCompatibility, blockQuotes, hiragana, katakana, bopomofo, hangulCompat, kanbun, squareHiragana, hangul, bopomofoExt, enclosedCJK, fullwidth, emoji, symbols, transport, symbolsExtA:
-		out = fmt.Sprintf(widePattern, " ", string(r))
+	case wide:
+		out = fmt.Sprintf(widePattern, " ", politePrint(r))
 	default:
 		out = fmt.Sprintf(defaultPattern, politePrint(r))
 	}

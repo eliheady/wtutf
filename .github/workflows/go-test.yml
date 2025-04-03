@@ -8,6 +8,13 @@ on:
 
 jobs:
 
+  vulncheck:
+    runs-on: ubuntu-latest
+    name: Run govulncheck
+    steps:
+    - id: govulncheck
+      uses: golang/govulncheck-action@v1
+
   build:
     runs-on: ubuntu-latest
     steps:

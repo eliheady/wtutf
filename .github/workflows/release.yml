@@ -10,8 +10,16 @@ permissions: read-all
 
 jobs:
 
+  vulncheck:
+    runs-on: ubuntu-latest
+    name: Run govulncheck
+    steps:
+    - id: govulncheck
+      uses: golang/govulncheck-action@v1
+
   args:
     runs-on: ubuntu-latest
+    needs: vulncheck
     outputs:
       commit-date: ${{ steps.ldflags.outputs.commit-date }}
       commit: ${{ steps.ldflags.outputs.commit }}
@@ -42,7 +50,7 @@ jobs:
         arch:
           - amd64
           - arm64
-    needs: args
+    needs: [vulncheck, args]
     uses: slsa-framework/slsa-github-generator/.github/workflows/builder_go_slsa3.yml@v2.1.0
     with:
       go-version: 1.17

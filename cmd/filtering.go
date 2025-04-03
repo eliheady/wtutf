@@ -47,9 +47,13 @@ func FindRange(r rune) (rangename string) {
 	return
 }
 
-// politePrint takes a rune and outputs a human readable conversion
+// politePrint takes a rune and outputs a string safe to print in the terminal,
+// and where possible with the original character. Control and formatting
+// characters are filtered, some combining characters are printed.
 func politePrint(r rune) string {
 	switch {
+	// render combining diacritics with one or two ◌ dotted circle characters
+	// to keep them from being printed over the colon
 	case unicode.Is(unicode.Diacritic, r):
 		if r == 0x005e || r == 0x0060 {
 			// ^, ` do not combine
@@ -66,9 +70,13 @@ func politePrint(r rune) string {
 	// output.
 	case unicode.IsControl(r):
 		return "^?"
-	// Other Alphabetic is ...
-	case unicode.Is(unicode.Other_Alphabetic, r):
-		return string(r) + " "
+
+	// Other Alphabetic contains a mix of LTR and RTL and combining characters.
+	// todo: if we implement locale detection we could use that to properly
+	// handle right-to-left runes
+	//case unicode.Is(unicode.Other_Alphabetic, r):
+	//	return string(r) + " "
+
 	// filter direction changing characters
 	// reasoning: we are printing a single character here. If we needed to print
 	// words then the directional marks should not be discarded. These checks are
@@ -82,7 +90,7 @@ func politePrint(r rune) string {
 	case unicode.Is(unicode.Bidi_Control, r):
 		return "^?"
 	case unicode.Is(unicode.Join_Control, r):
-		return " "
+		return "^?"
 	}
-	return string(r)
+	return " " + string(r)
 }

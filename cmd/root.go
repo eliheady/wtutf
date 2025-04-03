@@ -54,7 +54,7 @@ func Execute() {
 
 func init() {
 	var check, showRanges, strict, fromPuny, table bool
-	rootCmd.PersistentFlags().BoolVarP(&check, "check", "c", false, "Check whether the string contains characters from outside of the current locale")
+	rootCmd.PersistentFlags().BoolVarP(&check, "check", "c", false, "Check whether the string contains characters from more than one Unicode range")
 	rootCmd.PersistentFlags().BoolVarP(&showRanges, "show-ranges", "r", false, "Show the Unicode script ranges included in the string")
 	rootCmd.PersistentFlags().BoolVarP(&strict, "strict", "s", false, "Set strict punycode conversion rules")
 	rootCmd.PersistentFlags().BoolVarP(&fromPuny, "puny", "p", false, "Convert from punycode")
@@ -123,7 +123,7 @@ func processInput(ustring string, showRanges, strict, punyDecode, table bool) st
 		)
 	}
 
-	// todo: seperate accumulation of output from
+	// todo: separate accumulation of output from
 	// formatting, delegate to a printing function
 
 	var out string

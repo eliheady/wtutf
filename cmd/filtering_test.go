@@ -63,17 +63,17 @@ func TestPolitePrint(t *testing.T) {
 		{
 			name: "Printable ASCII character",
 			r:    'A',
-			want: "A",
+			want: " A",
 		},
 		{
 			name: "Wide character - CJK Unified Ideograph",
 			r:    0x4E00,
-			want: "一",
+			want: " 一",
 		},
 		{
 			name: "Piñata emoji",
 			r:    0x1FA85,
-			want: "🪅",
+			want: " 🪅",
 		},
 	}
 

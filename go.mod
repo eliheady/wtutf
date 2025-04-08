@@ -1,4 +1,4 @@
-module wtutf
+module github.com/eliheady/wtutf
 
 go 1.24
 

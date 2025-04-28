@@ -151,23 +151,39 @@ This program shows what went into strings that look similar but aren't identical
 
 ### Installing
 
+```shell
+go install github.com/eliheady/wtutf
+```
+
+#### Build Verification
 Download a build from the Releases section at right or [here](https://github.com/eliheady/wtutf/releases).
 
 To verify provenance of a release, use the [slsa-verifier utility](https://github.com/slsa-framework/slsa-verifier) provided by the SLSA Framework project.
 
-Example of verifying the [v0.0.1 release](https://github.com/eliheady/wtutf/releases/tag/v0.0.1):
+Example of verifying the [v0.0.3 release](https://github.com/eliheady/wtutf/releases/tag/v0.0.3):
 ```shell
-$ curl -sLo wtutf-darwin-arm64 https://github.com/eliheady/wtutf/releases/download/v0.0.1/wtutf-darwin-arm64
-$ curl -sLo wtutf-darwin-arm64.intoto.jsonl https://github.com/eliheady/wtutf/releases/download/v0.0.1/wtutf-darwin-arm64.intoto.jsonl
-$ slsa-verifier verify-artifact wtutf-darwin-arm64 --provenance-path wtutf-darwin-arm64.intoto.jsonl --source-uri github.com/eliheady/wtutf --source-tag v0.0.1
+$ curl -sLo wtutf-darwin-arm64 \
+  https://github.com/eliheady/wtutf/releases/download/v0.0.3/wtutf-darwin-arm64
 
-Verified build using builder "https://github.com/slsa-framework/slsa-github-generator/.github/workflows/builder_go_slsa3.yml@refs/tags/v2.1.0" at commit cca466a774d7475d4c4c404d9374f95d09afc6ee
+$ curl -sLo wtutf-darwin-arm64.intoto.jsonl \
+  https://github.com/eliheady/wtutf/releases/download/v0.0.3/wtutf-darwin-arm64.intoto.jsonl
+
+$ slsa-verifier verify-artifact wtutf-darwin-arm64 \
+  --provenance-path wtutf-darwin-arm64.intoto.jsonl \
+  --source-uri github.com/eliheady/wtutf \
+  --source-tag v0.0.3
+```
+
+Assuming everything worked as intended, you should see this:
+
+```shell
+Verified build using builder "https://github.com/slsa-framework/slsa-github-generator/.github/workflows/builder_go_slsa3.yml@refs/tags/v2.1.0" at commit 2873860cebdd429ae4a1b080d0bcc2a2c29efc87
 Verifying artifact wtutf-darwin-arm64: PASSED
 
 PASSED: SLSA verification passed
 ```
 
-### Build from source
+#### Build from source
 
 ```shell
 git clone https://github.com/eliheady/wtutf

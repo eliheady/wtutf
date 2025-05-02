@@ -42,14 +42,24 @@ jobs:
       uses: actions/setup-go@v5
       with:
         go-version: ^1.23
+    #-
+    #  id: release
+    #  name: Goreleaser release
+    #  uses: goreleaser/goreleaser-action@v6
+    #  with:
+    #    distribution: goreleaser
+    #    version: latest
+    #    args: release
+    #  env:
+    #    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     -
-      id: release
-      name: Goreleaser release
+      id: build
+      name: Goreleaser build
       uses: goreleaser/goreleaser-action@v6
       with:
         distribution: goreleaser
         version: latest
-        args: release
+        args: build
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     -
@@ -57,7 +67,7 @@ jobs:
       shell: bash
       id: hash
       run: |
-        echo "hashes=$(sha256sum wtutf* | base64 -w0)" >> "$GITHUB_OUTPUT"
+        echo "hashes=$(sha256sum dist/*/wtutf* | base64 -w0)" >> "$GITHUB_OUTPUT"
 
   provenance:
     needs: [draft_release]
@@ -70,3 +80,4 @@ jobs:
       base64-subjects: "${{ needs.draft_release.outputs.hashes }}"
       # Upload provenance to a new release
       upload-assets: true
+      draft-release: true

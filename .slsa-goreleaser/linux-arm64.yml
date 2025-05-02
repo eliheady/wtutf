@@ -9,7 +9,10 @@ flags:
 goos: linux
 goarch: arm64
 binary: wtutf-{{ .Os }}-{{ .Arch }}
+mod_timestamp: "{{ .Env.COMMIT_DATE }}"
 ldflags:
+  - "-s -w"
+  - "-X main.date={{ .Env.COMMIT_DATE }}"
   - "-X main.Version={{ .Env.VERSION }}"
   - "-X main.Commit={{ .Env.COMMIT }}"
   - "-X main.CommitDate={{ .Env.COMMIT_DATE }}"

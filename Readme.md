@@ -156,32 +156,18 @@ go install github.com/eliheady/wtutf
 ```
 
 #### Build Verification
+
+Releases include a build provenance attestation step that uses the [attest-build-provenance](https://github.com/actions/attest-build-provenance) GitHub action. Verification requires the [GitHub gh CLI](https://cli.github.com/) tool.
+
 Download a build from the Releases section at right or [here](https://github.com/eliheady/wtutf/releases).
 
-To verify provenance of a release, use the [slsa-verifier utility](https://github.com/slsa-framework/slsa-verifier) provided by the SLSA Framework project.
-
-Example of verifying the [v0.0.3 release](https://github.com/eliheady/wtutf/releases/tag/v0.0.3):
-```shell
-$ curl -sLo wtutf-darwin-arm64 \
-  https://github.com/eliheady/wtutf/releases/download/v0.0.3/wtutf-darwin-arm64
-
-$ curl -sLo wtutf-darwin-arm64.intoto.jsonl \
-  https://github.com/eliheady/wtutf/releases/download/v0.0.3/wtutf-darwin-arm64.intoto.jsonl
-
-$ slsa-verifier verify-artifact wtutf-darwin-arm64 \
-  --provenance-path wtutf-darwin-arm64.intoto.jsonl \
-  --source-uri github.com/eliheady/wtutf \
-  --source-tag v0.0.3
-```
-
-Assuming everything worked as intended, you should see this:
+The attestation results for past releases are at [https://github.com/eliheady/wtutf/attestations](https://github.com/eliheady/wtutf/attestations). To verify this release, install `gh` and run this command (change the artifact as needed for your use-case):
 
 ```shell
-Verified build using builder "https://github.com/slsa-framework/slsa-github-generator/.github/workflows/builder_go_slsa3.yml@refs/tags/v2.1.0" at commit 2873860cebdd429ae4a1b080d0bcc2a2c29efc87
-Verifying artifact wtutf-darwin-arm64: PASSED
-
-PASSED: SLSA verification passed
+gh attestation verify wtutf_v0.0.4_darwin_arm64.tar.gz -R eliheady/wtutf
 ```
+
+See the GitHub [documentation](https://docs.github.com/en/actions/security-for-github-actions/using-artifact-attestations/using-artifact-attestations-to-establish-provenance-for-builds#verifying-artifact-attestations-with-the-github-cli) for alternative verification steps.
 
 #### Build from source
 

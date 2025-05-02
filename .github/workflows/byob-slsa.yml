@@ -9,6 +9,7 @@ on:
 jobs:
   draft_release:
     outputs:
+      hashes: ${{ steps.collect.outputs.hashes }}
       base64-subjects: ${{ steps.collect.outputs.base64-subjects }}
     name: draft release
     runs-on: ubuntu-latest
@@ -43,42 +44,21 @@ jobs:
       uses: actions/setup-go@v5
       with:
         go-version: ^1.23
-    #-
-    #  id: release
-    #  name: Goreleaser release
-    #  uses: goreleaser/goreleaser-action@v6
-    #  with:
-    #    distribution: goreleaser
-    #    version: latest
-    #    args: release
-    #  env:
-    #    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     -
-      id: build
-      name: Goreleaser build
+      id: release
+      name: Goreleaser release
       uses: goreleaser/goreleaser-action@v6
       with:
         version: latest
-        args: build
-        binary: "{{ .ProjectName }}_{{ .Tag }}"
-        name_template: "{{ .Binary }}_{{ .Os }}_{{ .Arch }}"
+        args: release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     -
       name: Collect artifact metadata
       id: collect
       run: |
-        ls -R dist
-        # Generate sha256sum-style output for each artifact
-        subjects=""
-        for file in $(find dist -type f -name "wtutf*"); do
-          echo "Processing artifact \"$file\""
-          sha256=$(sha256sum "$file" | awk '{print $1}')
-          subjects+="$sha256 $file\n"
-        done
-
-        # Base64 encode the subjects
-        echo "base64-subjects=$(echo -e "$subjects" | base64 -w0)" >> "$GITHUB_OUTPUT"
+        echo "hashes=$(find . -type f -name \*wtutf\* -exec sha256sum {} \; | base64 -w0)" >> "$GITHUB_OUTPUT"
+        echo "base64-subjects=$(find . -type f -name \*wtutf\* -exec sha256sum {} \; | base64 -w0)" >> "$GITHUB_OUTPUT"
 
   provenance:
     needs: [draft_release]

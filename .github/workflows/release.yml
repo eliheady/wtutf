@@ -1,5 +1,4 @@
-name: |
-  RELEASE: SLSA Go releaser
+name: "RELEASE: SLSA Go releaser"
 
 on:
   workflow_dispatch:

@@ -1,5 +1,5 @@
-name: |
-  RELEASE: Make Draft Release
+name: "RELEASE: Make Draft Release"
+  
 
 on:
   push:
@@ -12,7 +12,6 @@ jobs:
   draft_release:
     outputs:
       hashes: ${{ steps.collect.outputs.hashes }}
-      base64-subjects: ${{ steps.collect.outputs.base64-subjects }}
     name: draft release
     runs-on: ubuntu-latest
     permissions:
@@ -56,11 +55,10 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     -
-      name: Collect artifact metadata
+      name: Collect artifact digests
       id: collect
       run: |
-        echo "hashes=$(find . -type f -name \*wtutf\* -exec sha256sum {} \; | base64 -w0)" >> "$GITHUB_OUTPUT"
-        echo "base64-subjects=$(find . -type f -name \*wtutf\* -exec sha256sum {} \; | base64 -w0)" >> "$GITHUB_OUTPUT"
+        echo "hashes=$(find dist -type f -name \*wtutf\* -exec sha256sum {} \; | base64 -w0)" >> "$GITHUB_OUTPUT"
 
   provenance:
     needs: [draft_release]
@@ -70,6 +68,6 @@ jobs:
       contents: write
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
     with:
-      base64-subjects: "${{ needs.draft_release.outputs.base64-subjects }}"
+      base64-subjects: "${{ needs.draft_release.outputs.hashes }}"
       upload-assets: true
       draft-release: true

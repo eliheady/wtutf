@@ -16,7 +16,7 @@ builds:
       - amd64
       - arm64
     binary: wtutf-{{ .Os }}-{{ .Arch }}
-    mod_timestamp: "{{ .CommitDate }}"
+    mod_timestamp: "{{ .CommitTimestamp }}"
     buildmode: "c-archive"
     ldflags:
       - "-s -w"

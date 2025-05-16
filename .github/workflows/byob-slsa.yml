@@ -52,7 +52,7 @@ jobs:
       uses: goreleaser/goreleaser-action@v6
       with:
         version: latest
-        args: release --clean --draft
+        args: release --clean --draft --skip announce
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -62,6 +62,7 @@ jobs:
       with:
         subject-path: |
           dist/**/*wtutf*tar.gz
+          dist/**/*wtutf*zip
           dist/**/*wtutf*checksums.txt
 
     - name: metadata

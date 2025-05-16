@@ -54,4 +54,22 @@ jobs:
       uses: actions/attest-build-provenance@v2
       with:
         subject-path: |
-          dist/**/*wtutf*
+          dist/**/*wtutf*tar.gz
+          dist/**/*wtutf*zip
+          dist/**/*wtutf*checksums.txt
+
+    - run: |
+        echo "goreleaser metadata"
+        echo ${{ steps.release.outputs.metadata }}
+        echo "goreleaser artifacts"
+        echo ${{ steps.release.outputs.artifacts }}
+        echo "attestation document"
+        cat /tmp/attestation.json
+
+    #- name: Generate container attestation
+    #  uses: actions/attest-build-provenance@v2
+    #  with:
+    #    subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+    #    # todo: figure out where goreleaser stores the image sha
+    #    subject-digest: ${{ fromJson(steps.release.outputs.metadata).somekey }}
+    #    push-to-registry: true

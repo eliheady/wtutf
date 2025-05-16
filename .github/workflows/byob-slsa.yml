@@ -46,25 +46,27 @@ jobs:
       uses: goreleaser/goreleaser-action@v6
       with:
         version: latest
-        args: release
+        args: release --clean --skip publish
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Generate Attestation
+      id: attest
       uses: actions/attest-build-provenance@v2
       with:
         subject-path: |
           dist/**/*wtutf*tar.gz
-          dist/**/*wtutf*zip
           dist/**/*wtutf*checksums.txt
 
-    - run: |
+    - name: outputs
+      id: outputs
+      run: |
         echo "goreleaser metadata"
-        echo ${{ steps.release.outputs.metadata }}
+        echo "${{ fromJson(steps.release.outputs.metadata) }}"
         echo "goreleaser artifacts"
-        echo ${{ steps.release.outputs.artifacts }}
-        echo "attestation document"
-        cat /tmp/attestation.json
+        echo "${{ fromJson(steps.release.outputs.artifacts) }}"
+        echo "attestation url"
+        echo "${{ steps.attest.outputs.attestation-url }}"
 
     #- name: Generate container attestation
     #  uses: actions/attest-build-provenance@v2

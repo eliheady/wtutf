@@ -38,22 +38,48 @@ archives:
       - "zip"
 dockers:
   - image_templates:
-      - "ghcr.io/eliheady/{{ .ProjectName }}:{{ .Tag }}-{{ .Arch }}"
+      - &amd_image "ghcr.io/eliheady/{{ .ProjectName }}:{{ .Tag }}-amd64"
+    goos: linux
+    goarch: amd64
+    use: buildx
+    ids:
+      - build
     dockerfile: Containerfile
     build_flag_templates:
-      - --platform {{ .Os }}/{{ .Arch }}
+      - --platform {{ .Os }}/amd64
       - --label=org.opencontainers.image.title={{ .ProjectName }}
       - --label=org.opencontainers.image.description={{ .ProjectName }}
-      - --label=org.opencontainers.image.url=https://github.com/eliheady/{{ .ProjectName }}
-      - --label=org.opencontainers.image.source=https://github.com/eliheady/{{ .ProjectName }}
-      - --label=org.opencontainers.image.version={{ .Version }}
-      - --label=org.opencontainers.image.created={{ .CommitDate }}
+      - --label=org.opencontainers.image.url={{ .GitURL }}
+      - --label=org.opencontainers.image.created={{ .Date }}
+      - --label=org.opencontainers.image.name={{ .ProjectName }}
       - --label=org.opencontainers.image.revision={{ .FullCommit }}
+      - --label=org.opencontainers.image.version={{ .Version }}
+      - --label=org.opencontainers.image.source={{ .GitURL }}
       - --label=org.opencontainers.image.licenses=MIT
-docker_manifests:
-  - name_template: ghcr.io/eliheady/{{ .ProjectName }}:{{ .Tag }}
-    image_templates:
-      - ghcr.io/eliheady/{{ .ProjectName }}:{{ .Tag }}-{{ .Arch }}
+  - image_templates:
+      - &arm_image "ghcr.io/eliheady/{{ .ProjectName }}:{{ .Tag }}-arm64"
+    goos: linux
+    goarch: arm64
+    use: buildx
+    ids:
+      - build
+    dockerfile: Containerfile
+    build_flag_templates:
+      - --platform {{ .Os }}/arm64
+      - --label=org.opencontainers.image.title={{ .ProjectName }}
+      - --label=org.opencontainers.image.description={{ .ProjectName }}
+      - --label=org.opencontainers.image.url={{ .GitURL }}
+      - --label=org.opencontainers.image.created={{ .Date }}
+      - --label=org.opencontainers.image.name={{ .ProjectName }}
+      - --label=org.opencontainers.image.revision={{ .FullCommit }}
+      - --label=org.opencontainers.image.version={{ .Version }}
+      - --label=org.opencontainers.image.source={{ .GitURL }}
+      - --label=org.opencontainers.image.licenses=MIT
+# docker_manifests:
+#   - name_template: ghcr.io/eliheady/{{ .ProjectName }}:{{ .Tag }}
+#     image_templates:
+#       - *amd_image
+#       - *arm_image
 release:
   draft: true
   mode: append

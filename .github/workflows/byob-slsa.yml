@@ -11,6 +11,12 @@ jobs:
   draft_release:
     name: draft release
     runs-on: ubuntu-latest
+    outputs:
+      attestation-url: ${{ steps.attest.outputs.attestation-url }}
+      image-digest: ${{ steps.metadata.outputs.image-digest }}
+      image-name: ${{ steps.metadata.outputs.image-name }}
+      artifacts: ${{ steps.metadata.outputs.artifacts }}
+      metadata: ${{ steps.metadata.outputs.metadata }}
 
     permissions:
       attestations: write
@@ -46,25 +52,28 @@ jobs:
       uses: goreleaser/goreleaser-action@v6
       with:
         version: latest
-        args: release
+        args: release --clean --draft
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Generate Attestation
+      id: attest
       uses: actions/attest-build-provenance@v2
       with:
         subject-path: |
           dist/**/*wtutf*tar.gz
-          dist/**/*wtutf*zip
           dist/**/*wtutf*checksums.txt
 
-    - run: |
-        echo "goreleaser metadata"
-        echo ${{ steps.release.outputs.metadata }}
-        echo "goreleaser artifacts"
-        echo ${{ steps.release.outputs.artifacts }}
-        echo "attestation document"
-        cat /tmp/attestation.json
+    - name: metadata
+      id: metadata
+      env:
+        ARTIFACTS: ${{ steps.release.outputs.artifacts }}
+        METADATA:  ${{ steps.release.outputs.metadata }}
+      run: |
+        echo "artifacts=$(echo "$ARTIFACTS" )" >> "$GITHUB_OUTPUT"
+        echo "metadata=$(echo "$METADATA" )" >> "$GITHUB_OUTPUT"
+        echo "image-digest=$(echo "$ARTIFACTS" | jq -r '.[]|select(.type=="Docker Manifest")|select(.name|test(":v"))|.extra.Digest')" >> "$GITHUB_OUTPUT"
+        echo "image-name=$(echo "$ARTIFACTS" | jq -r '.[]|select(.type=="Docker Manifest")|select(.name|test(":v"))|.name|split(":")[0]')" >> "$GITHUB_OUTPUT"
 
     #- name: Generate container attestation
     #  uses: actions/attest-build-provenance@v2
@@ -73,3 +82,41 @@ jobs:
     #    # todo: figure out where goreleaser stores the image sha
     #    subject-digest: ${{ fromJson(steps.release.outputs.metadata).somekey }}
     #    push-to-registry: true
+
+  output:
+    runs-on: ubuntu-latest
+    needs: draft_release
+    steps:
+    - name: debug
+      env:
+        ATTESTATION_URL: ${{ needs.draft-release.outputs.attestation-url }}
+        IMAGE_DIGEST: ${{ needs.draft-release.outputs.image-digest }}
+        IMAGE_NAME: ${{ needs.draft-release.outputs.image-name }}
+        ARTIFACTS: ${{ needs.draft-release.outputs.artifacts }}
+        METADATA: ${{ needs.draft-release.outputs.metadata }}
+      run: |
+        echo "attestation:"
+        echo "$ATTESATION_URL"
+        echo "image:"
+        echo "$IMAGE_DIGEST"
+        echo "$IMAGE_NAME"
+        echo "artifacts:"
+        echo "$ARTIFACTS"
+        echo "metadata:"
+        echo "$METADATA"
+
+  #notes:
+  #  runs-on: ubuntu-latest
+  #  needs: draft-release
+  #  permissions:
+  #    contents: write
+  #  steps:
+  #  - name: Append Release Notes
+  #    id: notes
+  #    uses: goreleaser/goreleaser-action@v6
+  #    with:
+  #      version: latest
+  #      args: release --config .goreleaser-notes.yml --skip archive
+  #    env:
+  #      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

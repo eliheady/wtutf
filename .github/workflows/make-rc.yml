@@ -5,6 +5,7 @@ name: "RELEASE: Make Draft Release"
 on:
   push:
     tags:
+      - v[0-9]+.[0-9]+.[0-9]+
       - v[0-9]+.[0-9]+.[0-9]+-*
 
 permissions: read-all
@@ -147,7 +148,7 @@ jobs:
         command (all artifacts are signed, change \`checksums.txt\` as needed for your use-case):
 
         \`\`\`shell
-        gh attestation verify checksums.txt -R eliheady/wtutf
+        gh attestation verify checksums.txt -R ${{ github.repository }} -t $RELEASE_TAG
         \`\`\`
         EOF
         #gh release edit ${RELEASE_TAG} --notes-file $RELEASE_NOTES_FILE

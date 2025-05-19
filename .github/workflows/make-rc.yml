@@ -18,14 +18,12 @@ jobs:
 
     outputs:
 
-      artifacts: ${{ steps.metadata.outputs.artifacts }}
-      attestation-url: ${{ steps.attest.outputs.attestation-url }}
-      image-digest: ${{ steps.metadata.outputs.image-digest }}
-      image-name: ${{ steps.metadata.outputs.image-name }}
-      metadata: ${{ steps.metadata.outputs.metadata }}
-      release-id: ${{ steps.metadata.outputs.release-id }}
-      release-tag: ${{ steps.metadata.outputs.release-tag }}
-
+      artifacts: ${{ steps.release.outputs.artifacts }}
+      clean_semver: ${{ steps.setup.outputs.clean_semver }}
+      metadata: ${{ steps.release.outputs.metadata }}
+      release-tag: ${{ steps.setup.outputs.release-tag }}
+      release-id: ${{ steps.release_id.outputs.release-id }}
+      
     permissions:
 
       attestations: write
@@ -85,6 +83,16 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+    # Upload all built artifacts for attestation
+    - name: Upload build artifacts for attestation
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-artifacts
+        path: |
+          dist/*wtutf*tar.gz
+          dist/*wtutf*zip
+          dist/checksums.txt
+
     - name: Get Release ID
       id: release_id
       env:
@@ -97,21 +105,34 @@ jobs:
           /repos/${{ github.repository }}/releases | jq ".[] | select(.tag_name == \"$RELEASE_TAG\").id")
         echo "release-id=$release_id" | tee -a "$GITHUB_OUTPUT"
     
-    - name: Generate Attestation
-      id: attest
-      if: steps.setup.outputs.clean_semver == 'true'
-      uses: actions/attest-build-provenance@v2
-      with:
-        subject-path: |
-          dist/**/*wtutf*tar.gz
-          dist/**/*wtutf*zip
-          dist/checksums.txt
+  attest:
+    name: Generate Attestation
+    needs: [draft_release]
+    permissions:
+      attestations: write
+      id-token: write
+      contents: read
+    if: needs.draft_release.outputs.clean_semver == 'true'
+    uses: eliheady/wtutf/.github/workflows/attest.yml@c13c6fd98429f6761e11b919403ae787e3e87d8d
+    secrets: inherit
+    with:
+        subject-path: 'release/*'
 
+  notes:
+    runs-on: ubuntu-latest
+    needs: [draft_release, attest]
+    name: Add Release Notes
+    outputs:
+      image-digest: ${{ steps.metadata.outputs.image-digest }}
+      image-name: ${{ steps.metadata.outputs.image-name }}
+      release-id: ${{ steps.metadata.outputs.release-id }}
+
+    steps:
     - name: Collect Metadata
       id: metadata
       env:
-        ARTIFACTS: ${{ steps.release.outputs.artifacts }}
-        METADATA:  ${{ steps.release.outputs.metadata }}
+        ARTIFACTS: ${{ needs.draft_release.outputs.artifacts }}
+        METADATA:  ${{ needs.draft_release.outputs.metadata }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         echo "artifacts=$(echo "$ARTIFACTS" )" >> "$GITHUB_OUTPUT"
@@ -128,12 +149,12 @@ jobs:
     #    push-to-registry: true
 
     - name: Attestation Notes
-      if: steps.setup.outputs.clean_semver == 'true'
+      if: needs.draft_release.outputs.clean_semver == 'true'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        RELEASE_TAG: ${{ steps.setup.outputs.release-tag }}
-        RELEASE_ID: ${{ steps.release_id.outputs.release-id }}
-        ATTESTATION_URL: ${{ steps.attest.outputs.attestation-url }}
+        RELEASE_TAG: ${{ needs.draft_release.outputs.release-tag }}
+        RELEASE_ID: ${{ needs.draft_release.outputs.release-id }}
+        ATTESTATION_URL: ${{ needs.attest.outputs.attestation-url }}
       run: |-
         tmpfile=$(mktemp)
         RELEASE_NOTES_FILE=$tmpfile-notes.md

@@ -1,0 +1,51 @@
+name: Sign Artifact
+
+on:
+  workflow_call:
+    inputs:
+    
+      subject-path:
+        required: false
+        type: string
+
+      push-to-registry:
+        required: false
+        type: boolean
+
+      show-summary:
+        required: false
+        type: boolean
+
+jobs:
+  sign-artifact:
+    name: Sign Artifact
+
+    outputs:
+      attestation-url: ${{ steps.attest.outputs.attestation-url }}
+      attestation-id: ${{ steps.attest.outputs.attestation-id }}
+      bundle-path: ${{ steps.attest.outputs.bundle-path }}
+
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      attestations: write
+      contents: read
+
+    steps:
+    # Download the artifacts uploaded by the build job
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: build-artifacts
+        path: release
+
+    - name: Attest Build Provenance
+      id: attest
+      uses: actions/attest-build-provenance@v2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        subject-path: ${{ inputs.subject-path }}
+        push-to-registry: ${{ inputs.push-to-registry }}
+        show-summary: ${{ inputs.show-summary }}

@@ -17,3 +17,21 @@ ldflags:
   - "-X main.Commit={{ .Env.COMMIT }}"
   - "-X main.CommitDate={{ .Env.COMMIT_DATE }}"
   - "-X main.TreeState={{ .Env.TREE_STATE }}"
+dockers:
+  - image_templates:
+      - "ghcr.io/eliheady/{{ .ProjectName }}:{{ .Tag }}-{{ .Arch }}"
+    dockerfile: Containerfile
+    build_flag_templates:
+      - --platform {{ .Os }}/{{ .Arch }}
+      - --label=org.opencontainers.image.title={{ .ProjectName }}
+      - --label=org.opencontainers.image.description={{ .ProjectName }}
+      - --label=org.opencontainers.image.url=https://github.com/eliheady/{{ .ProjectName }}
+      - --label=org.opencontainers.image.source=https://github.com/eliheady/{{ .ProjectName }}
+      - --label=org.opencontainers.image.version={{ .Version }}
+      - --label=org.opencontainers.image.created={{ .Env.COMMIT_DATE }}
+      - --label=org.opencontainers.image.revision={{ .FullCommit }}
+      - --label=org.opencontainers.image.licenses=MIT
+docker_manifests:
+  - name_template: ghcr.io/eliheady/{{ .ProjectName }}:{{ .Tag }}
+    image_templates:
+      - ghcr.io/eliheady/{{ .ProjectName }}:{{ .Tag }}-{{ .Arch }}

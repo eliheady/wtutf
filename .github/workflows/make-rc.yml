@@ -1,0 +1,161 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: "RELEASE: Make Draft Release"
+
+on:
+  push:
+    tags:
+      - v[0-9]+.[0-9]+.[0-9]+
+      - v[0-9]+.[0-9]+.[0-9]+-*
+
+permissions: read-all
+
+jobs:
+  draft_release:
+
+    name: Draft Release
+    runs-on: ubuntu-latest
+
+    outputs:
+
+      artifacts: ${{ steps.metadata.outputs.artifacts }}
+      attestation-url: ${{ steps.attest.outputs.attestation-url }}
+      image-digest: ${{ steps.metadata.outputs.image-digest }}
+      image-name: ${{ steps.metadata.outputs.image-name }}
+      metadata: ${{ steps.metadata.outputs.metadata }}
+      release-id: ${{ steps.metadata.outputs.release-id }}
+      release-tag: ${{ steps.metadata.outputs.release-tag }}
+
+    permissions:
+
+      attestations: write
+      contents: write
+      id-token: write
+      packages: write
+      pull-requests: write
+
+    steps:
+
+    - name: Checkout repo
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup
+      id: setup
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        TAG=${{ github.ref }}
+        TAG=${TAG#refs/tags/}
+        echo "release-tag=$TAG" | tee -a "$GITHUB_OUTPUT"
+        previous_releases=$( (gh release view $TAG --json id 2>/dev/null || echo '{"id":"ok"}') | jq -r '.id')
+        if [ "$previous_releases" != "ok" ]; then
+          echo "ERROR: $(echo $previous_releases | wc -l) previous release(s) found for tag $TAG:"
+          echo "$previous_releases"
+          exit 1
+        fi
+        echo "Release $TAG does not exist. Proceeding."
+        if [[ "${{ github.ref }}" =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          echo "This is a clean semver tag and the release will be submitted for attestation."
+          echo "clean_semver=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "NOTICE This is a pre-release tag and the attestation steps will be skipped."
+          echo "clean_semver=false" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ^1.23
+
+    - name: Goreleaser release
+      id: release
+      uses: goreleaser/goreleaser-action@v6
+      with:
+        version: '~> v2'
+        args: release --clean --draft --skip announce
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Get Release ID
+      id: release_id
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        RELEASE_TAG: ${{ steps.setup.outputs.release-tag }}
+      run: |
+        release_id=$(gh api \
+          -H "Accept: application/vnd.github+json" \
+          -H "X-GitHub-Api-Version: 2022-11-28" \
+          /repos/${{ github.repository }}/releases | jq ".[] | select(.tag_name == \"$RELEASE_TAG\").id")
+        echo "release-id=$release_id" | tee -a "$GITHUB_OUTPUT"
+    
+    - name: Generate Attestation
+      id: attest
+      if: steps.setup.outputs.clean_semver == 'true'
+      uses: actions/attest-build-provenance@v2
+      with:
+        subject-path: |
+          dist/**/*wtutf*tar.gz
+          dist/**/*wtutf*zip
+          dist/checksums.txt
+
+    - name: Collect Metadata
+      id: metadata
+      env:
+        ARTIFACTS: ${{ steps.release.outputs.artifacts }}
+        METADATA:  ${{ steps.release.outputs.metadata }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        echo "artifacts=$(echo "$ARTIFACTS" )" >> "$GITHUB_OUTPUT"
+        echo "metadata=$(echo "$METADATA" )" >> "$GITHUB_OUTPUT"
+
+    #- name: Generate container attestation
+    #  uses: actions/attest-build-provenance@v2
+    #  with:
+    #    subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+    #    # todo: figure out docker manifest goreleaser issue, then set these in the metadata step
+    #    #echo "image-digest=$(echo "$ARTIFACTS" | jq -r '.[]|select(.type=="Docker Manifest")|select(.name|test(":v"))|.extra.Digest')" >> "$GITHUB_OUTPUT"
+    #    #echo "image-name=$(echo "$ARTIFACTS" | jq -r '.[]|select(.type=="Docker Manifest")|select(.name|test(":v"))|.name|split(":")[0]')" >> "$GITHUB_OUTPUT"
+    #    subject-digest: ${{ steps.metadata.outputs.image-digest }}
+    #    push-to-registry: true
+
+    - name: Attestation Notes
+      if: steps.setup.outputs.clean_semver == 'true'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        RELEASE_TAG: ${{ steps.setup.outputs.release-tag }}
+        RELEASE_ID: ${{ steps.release_id.outputs.release-id }}
+        ATTESTATION_URL: ${{ steps.attest.outputs.attestation-url }}
+      run: |-
+        tmpfile=$(mktemp)
+        RELEASE_NOTES_FILE=$tmpfile-notes.md
+        echo $RELEASE_NOTES_FILE
+        gh release view $RELEASE_TAG --json body | jq -r '.body' > $RELEASE_NOTES_FILE
+        cat >> $RELEASE_NOTES_FILE <<EOF
+        ## Verify Release Artifacts
+
+        The attestation results for this release are at [$ATTESTATION_URL]($ATTESTATION_URL).
+
+        To verify this release: download a release artifact, install \`gh\` and run this
+        command (all artifacts are signed, change \`checksums.txt\` as needed for your use-case):
+
+        \`\`\`shell
+        gh attestation verify checksums.txt -R ${{ github.repository }} -t $RELEASE_TAG
+        \`\`\`
+        EOF
+        #gh release edit ${RELEASE_TAG} --notes-file $RELEASE_NOTES_FILE
+        gh api --method PATCH \
+          -H "Accept: application/vnd.github.v3+json" \
+          -H "X-GitHub-Api-Version: 2022-11-28" \
+          /repos/${{ github.repository }}/releases/${RELEASE_ID} \
+          -f "body=$(cat $RELEASE_NOTES_FILE)" \
+          -f "make_latest=false"
+        echo "release-notes=$RELEASE_NOTES_FILE" >> "$GITHUB_OUTPUT"

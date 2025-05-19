@@ -113,7 +113,7 @@ jobs:
       id-token: write
       contents: read
     if: needs.draft_release.outputs.clean_semver == 'true'
-    uses: eliheady/wtutf/.github/workflows/attest.yml@c13c6fd98429f6761e11b919403ae787e3e87d8d
+    uses: eliheady/wtutf/.github/workflows/attest.yml@3550b0891a0a53bd2415c585357b3226009dc6d1
     secrets: inherit
     with:
         subject-path: 'release/*'

@@ -21,9 +21,9 @@ jobs:
     name: Sign Artifact
 
     outputs:
-      attestation-url: ${{ steps.attest.outputs.attestation-url }}
-      attestation-id: ${{ steps.attest.outputs.attestation-id }}
-      bundle-path: ${{ steps.attest.outputs.bundle-path }}
+      attestation-url: ${{ steps.collect.outputs.attestation-url }}
+      attestation-id: ${{ steps.collect.outputs.attestation-id }}
+      bundle-path: ${{ steps.collect.outputs.bundle-path }}
 
     runs-on: ubuntu-latest
 
@@ -49,3 +49,10 @@ jobs:
         subject-path: ${{ inputs.subject-path }}
         push-to-registry: ${{ inputs.push-to-registry }}
         show-summary: ${{ inputs.show-summary }}
+
+    - name: Set outputs
+      id: collect
+      run: |
+        echo "attestation-url=${{ steps.attest.outputs.attestation-url }}" >> $GITHUB_OUTPUT
+        echo "attestation-id=${{ steps.attest.outputs.attestation-id }}" >> $GITHUB_OUTPUT
+        echo "bundle-path=${{ steps.attest.outputs.bundle-path }}" >> $GITHUB_OUTPUT

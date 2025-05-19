@@ -7,6 +7,7 @@ on:
       subject-path:
         required: false
         type: string
+        default: 'release'
 
       push-to-registry:
         required: false
@@ -15,10 +16,19 @@ on:
       show-summary:
         required: false
         type: boolean
+    outputs:
+      attestation-url:
+        value: ${{ jobs.sign-artifact.outputs.attestation-url }}
+
+      attestation-id:
+        value: ${{ jobs.sign-artifact.outputs.attestation-id }}
+
+      bundle-path:
+        value: ${{ jobs.sign-artifact.outputs.bundle-path }}
 
 jobs:
   sign-artifact:
-    name: Sign Artifact
+    name: Sign Artifacts
 
     outputs:
       attestation-url: ${{ steps.collect.outputs.attestation-url }}
@@ -38,7 +48,7 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: build-artifacts
-        path: release
+        path: ${{ inputs.subject-path }}
 
     - name: Attest Build Provenance
       id: attest
@@ -46,7 +56,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        subject-path: ${{ inputs.subject-path }}
+        subject-path: ${{ inputs.subject-path }}/*
         push-to-registry: ${{ inputs.push-to-registry }}
         show-summary: ${{ inputs.show-summary }}
 

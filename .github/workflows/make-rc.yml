@@ -159,7 +159,7 @@ jobs:
         tmpfile=$(mktemp)
         RELEASE_NOTES_FILE=$tmpfile-notes.md
         echo $RELEASE_NOTES_FILE
-        gh release view $RELEASE_TAG --json body | jq -r '.body' > $RELEASE_NOTES_FILE
+        gh release view $RELEASE_TAG --json body -R ${{ github.repository }} | jq -r '.body' > $RELEASE_NOTES_FILE
         cat >> $RELEASE_NOTES_FILE <<EOF
         ## Verify Release Artifacts
 
@@ -172,6 +172,7 @@ jobs:
         gh attestation verify checksums.txt -R ${{ github.repository }} -t $RELEASE_TAG
         \`\`\`
         EOF
+        # "gh release edit" can sometimes create new releases, which is not what we want here.
         #gh release edit ${RELEASE_TAG} --notes-file $RELEASE_NOTES_FILE
         gh api --method PATCH \
           -H "Accept: application/vnd.github.v3+json" \

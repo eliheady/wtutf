@@ -122,21 +122,11 @@ jobs:
     runs-on: ubuntu-latest
     needs: [draft_release, attest]
     name: Add Release Notes
-    outputs:
-      image-digest: ${{ steps.metadata.outputs.image-digest }}
-      image-name: ${{ steps.metadata.outputs.image-name }}
-      release-id: ${{ steps.metadata.outputs.release-id }}
 
     steps:
-    - name: Collect Metadata
-      id: metadata
-      env:
-        ARTIFACTS: ${{ needs.draft_release.outputs.artifacts }}
-        METADATA:  ${{ needs.draft_release.outputs.metadata }}
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Debug Attest Outputs
       run: |
-        echo "artifacts=$(echo "$ARTIFACTS" )" >> "$GITHUB_OUTPUT"
-        echo "metadata=$(echo "$METADATA" )" >> "$GITHUB_OUTPUT"
+        echo "Attest outputs: ${{ toJson(needs.attest.outputs) }}"
 
     #- name: Generate container attestation
     #  uses: actions/attest-build-provenance@v2

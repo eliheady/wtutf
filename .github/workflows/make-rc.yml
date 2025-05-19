@@ -113,10 +113,10 @@ jobs:
       id-token: write
       contents: read
     if: needs.draft_release.outputs.clean_semver == 'true'
-    uses: eliheady/wtutf/.github/workflows/attest.yml@3550b0891a0a53bd2415c585357b3226009dc6d1
+    uses: eliheady/wtutf/.github/workflows/attest.yml@7e50f5f9eae87d67038d21816f915f26bebe3d65
     secrets: inherit
     with:
-        subject-path: 'release/*'
+      subject-path: 'release/*'
 
   notes:
     runs-on: ubuntu-latest
@@ -151,7 +151,7 @@ jobs:
     - name: Attestation Notes
       if: needs.draft_release.outputs.clean_semver == 'true'
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         RELEASE_TAG: ${{ needs.draft_release.outputs.release-tag }}
         RELEASE_ID: ${{ needs.draft_release.outputs.release-id }}
         ATTESTATION_URL: ${{ needs.attest.outputs.attestation-url }}

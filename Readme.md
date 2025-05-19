@@ -161,10 +161,10 @@ Releases include a build provenance attestation step that uses the [attest-build
 
 Download a build from the Releases section at right or [here](https://github.com/eliheady/wtutf/releases).
 
-The attestation results for past releases are at [https://github.com/eliheady/wtutf/attestations](https://github.com/eliheady/wtutf/attestations). To verify this release, install `gh` and run this command (change the artifact as needed for your use-case):
+The attestation results for past releases are at [https://github.com/eliheady/wtutf/attestations](https://github.com/eliheady/wtutf/attestations). To verify a build artifact, install `gh` and run this command (change the artifact as needed for your use-case):
 
 ```shell
-gh attestation verify wtutf_v0.0.4_darwin_arm64.tar.gz -R eliheady/wtutf
+gh attestation verify wtutf_v0.0.5_darwin_arm64.tar.gz -R eliheady/wtutf
 ```
 
 See the GitHub [documentation](https://docs.github.com/en/actions/security-for-github-actions/using-artifact-attestations/using-artifact-attestations-to-establish-provenance-for-builds#verifying-artifact-attestations-with-the-github-cli) for alternative verification steps.

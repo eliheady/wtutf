@@ -37,13 +37,40 @@ before:
   hooks:
     - go fmt ./...
     - go mod tidy
+
 archives:
   - format_overrides:
     - goos: windows
       formats:
       - "zip"
+
 checksum:
   name_template: 'checksums.txt'
+
+release:
+  draft: true
+
+source:
+  enabled: true
+
+sboms:
+  - id: builds
+    artifacts: archive
+  - id: source
+    artifacts: source
+
+signs:
+  - cmd: cosign
+    artifacts: checksum
+    certificate: "${artifact}.pem"
+    output: true
+    args:
+      - "sign-blob"
+      - "--output-certificate=${certificate}"
+      - "--output-signature=${signature}"
+      - "${artifact}"
+      - "--yes" # needed on cosign 2.0.0+
+
 dockers:
   - image_templates:
       - &amd_image "ghcr.io/eliheady/{{ .ProjectName }}:{{ .Tag }}-amd64"
@@ -89,5 +116,11 @@ dockers:
 #       - *amd_image
 #       - *arm_image
 
-release:
-  draft: true
+docker_signs:
+  - cmd: cosign
+    artifacts: images
+    output: true
+    args:
+      - "sign"
+      - "${artifact}"
+      - "--yes" # needed on cosign 2.0.0+

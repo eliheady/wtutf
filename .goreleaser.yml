@@ -59,26 +59,12 @@ sboms:
   - id: source
     artifacts: source
 
-signs:
-  - cmd: cosign
-    artifacts: checksum
-    certificate: "${artifact}.pem"
-    output: true
-    args:
-      - "sign-blob"
-      - "--output-certificate=${certificate}"
-      - "--output-signature=${signature}"
-      - "${artifact}"
-      - "--yes" # needed on cosign 2.0.0+
-
 dockers:
   - image_templates:
       - &amd_image "ghcr.io/eliheady/{{ .ProjectName }}:{{ .Tag }}-amd64"
     goos: linux
     goarch: amd64
     use: buildx
-    ids:
-      - build
     dockerfile: Containerfile
     build_flag_templates:
       - --platform {{ .Os }}/amd64
@@ -96,8 +82,6 @@ dockers:
     goos: linux
     goarch: arm64
     use: buildx
-    ids:
-      - build
     dockerfile: Containerfile
     build_flag_templates:
       - --platform {{ .Os }}/arm64
@@ -110,11 +94,12 @@ dockers:
       - --label=org.opencontainers.image.version={{ .Version }}
       - --label=org.opencontainers.image.source={{ .GitURL }}
       - --label=org.opencontainers.image.licenses=MIT
-# docker_manifests:
-#   - name_template: ghcr.io/eliheady/{{ .ProjectName }}:{{ .Tag }}
-#     image_templates:
-#       - *amd_image
-#       - *arm_image
+
+docker_manifests:
+  - name_template: ghcr.io/eliheady/{{ .ProjectName }}:{{ .Tag }}
+    image_templates:
+      - *amd_image
+      - *arm_image
 
 docker_signs:
   - cmd: cosign

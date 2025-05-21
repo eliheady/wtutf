@@ -3,6 +3,9 @@
 name: "SCHED: Identify Transitive Dependencies"
 
 on:
+  workflow_dispatch:
+  schedule:
+    - cron: '21 12 * * 1'
   push:
     branches:
       - main

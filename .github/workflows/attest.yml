@@ -1,4 +1,6 @@
-name: Sign Artifact
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: "CALL: Sign Artifact"
 
 on:
   workflow_call:

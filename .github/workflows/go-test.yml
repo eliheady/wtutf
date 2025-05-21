@@ -1,5 +1,6 @@
-name: |
-  TEST: Run Go Tests
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: "TEST: Run Go Tests"
 
 on:
   #push:

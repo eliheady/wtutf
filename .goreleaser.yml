@@ -23,7 +23,7 @@ builds:
         goarch: "386"
       - goos: linux
         goarch: "386"
-    binary: wtutf-{{ .Os }}-{{ .Arch }}
+    binary: wtutf
     mod_timestamp: "{{ .CommitTimestamp }}"
     # fixme: failed to add: 'dist/go_darwin_arm64_v8.0/wtutf-darwin-arm64.h' -> 'wtutf-darwin-arm64.h': dist/go_darwin_arm64_v8.0/wtutf-darwin-arm64.h: lstat dist/go_darwin_arm64_v8.0/wtutf-darwin-arm64.h: no such file or directory
     #buildmode: "c-archive"

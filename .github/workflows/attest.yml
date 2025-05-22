@@ -5,11 +5,30 @@ name: "CALL: Sign Artifact"
 on:
   workflow_call:
     inputs:
+
+      artifact-upload-name:
+        description: The name of the uploaded artifact bundle. Required if subject-checksums or subject-path is provided.
+        type: string
     
+      artifact-restore-path:
+        description: The local path to restore the artifact bundle. Required if subject-checksums or subject-path is provided.
+        type: string
+
       subject-path:
         required: false
         type: string
-        default: 'release'
+
+      subject-name:
+        required: false
+        type: string
+
+      subject-digest:
+        required: false
+        type: string
+
+      subject-checksums:
+        required: false
+        type: string
 
       push-to-registry:
         required: false
@@ -18,6 +37,7 @@ on:
       show-summary:
         required: false
         type: boolean
+
     outputs:
       attestation-url:
         value: ${{ jobs.sign-artifact.outputs.attestation-url }}
@@ -45,22 +65,90 @@ jobs:
       contents: read
 
     steps:
+
+    - name: Validate inputs
+      id: validate-inputs
+      run: |
+        satisfied_args=false
+        restore_artifacts=false
+        if [ -n "${{ inputs.subject-checksums }}" ]; then
+          if [ -n "${{ inputs.subject-name }}" -o -n "${{ inputs.subject-path }}" ]; then
+            echo "Error: If subject-checksums is provided, subject-name and subject-path must not be provided."
+            exit 1
+          fi
+          if [ -z "${{ inputs.artifact-restore-path }}" -o -z "${{ inputs.artifact-upload-name }}" ]; then
+            echo "Error: If subject-checksums is provided, artifact-restore-path and artifact-upload-name must be provided."
+            exit 1
+          fi
+          restore_artifacts=true
+          satisfied_args=true
+        fi
+
+        if [ -n "${{ inputs.subject-path }}" ]; then
+          if [ -n "${{ inputs.subject-name }}" -o -n "${{ inputs.subject-checksums }}" ]; then
+            echo "Error: If subject-path is provided, subject-name and subject-checksums must not be provided."
+            exit 1
+          fi
+          if [ -z "${{ inputs.artifact-restore-path }}" -o -z "${{ inputs.artifact-upload-name }}" ]; then
+            echo "Error: If subject-checksums is provided, artifact-restore-path and artifact-upload-name must be provided."
+            exit 1
+          fi
+          restore_artifacts=true
+          satisfied_args=true
+        fi
+
+        if [ -n "${{ inputs.subject-digest }}" ]; then
+          if [ -z "${{ inputs.subject-name }}" ]; then
+            echo "Error: If subject-digest is provided, subject-name must be provided."
+            exit 1
+          fi
+          if [ -n "${{ inputs.subject-path }}" -o -n "${{ inputs.subject-checksums }}" ]; then
+            echo "Error: If subject-digest is provided, subject-path and subject-checksums must not be provided."
+            exit 1
+          fi
+          satisfied_args=true
+        fi
+
+        if [ "$satisfied_args" == "false" ]; then
+          echo "Error: At least one of subject-path, subject-name, or subject-checksums must be provided."
+          exit 1
+        fi
+
+        echo "restore-artifacts=$restore_artifacts" >> "$GITHUB_OUTPUT"
+
+        echo "restore-artifacts=$restore_artifacts"
+        echo "artifact-upload-name='${{ inputs.artifact-upload-name }}'"
+        echo "artifact-restore-path='${{ inputs.artifact-restore-path }}'"
+        echo "subject-path='${{ inputs.subject-path }}'"
+        echo "subject-digest='${{ inputs.subject-digest }}'"
+        echo "subject-name='${{ inputs.subject-name }}'"
+        echo "subject-checksums='${{ inputs.subject-checksums }}'"
+        echo "push-to-registry='${{ inputs.push-to-registry }}'"
+        echo "show-summary='${{ inputs.show-summary }}'"
+
     # Download the artifacts uploaded by the build job
     - name: Download build artifacts
-      uses: actions/download-artifact@v4
+      id: download-artifacts
+      if: steps.validate-inputs.outputs.restore-artifacts == 'true'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
       with:
-        name: build-artifacts
-        path: ${{ inputs.subject-path }}
+        name: ${{ inputs.artifact-upload-name }}
+        path: ${{ inputs.artifact-restore-path }}
 
     - name: Attest Build Provenance
       id: attest
-      uses: actions/attest-build-provenance@v2
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: actions/attest-build-provenance@db473fddc028af60658334401dc6fa3ffd8669fd # v2.3.0
       with:
-        subject-path: ${{ inputs.subject-path }}/*
+        subject-path: ${{ inputs.subject-path }}
+        subject-checksums: ${{ inputs.subject-checksums }}
         push-to-registry: ${{ inputs.push-to-registry }}
         show-summary: ${{ inputs.show-summary }}
+        subject-name: ${{ inputs.subject-name }}
+        subject-digest: ${{ inputs.subject-digest }}
 
     - name: Set outputs
       id: collect

@@ -11,7 +11,7 @@ on:
 permissions: read-all
 
 jobs:
-  draft_release:
+  release:
 
     name: Draft Release
     runs-on: ubuntu-latest
@@ -23,6 +23,9 @@ jobs:
       metadata: ${{ steps.release.outputs.metadata }}
       release-tag: ${{ steps.setup.outputs.release-tag }}
       release-id: ${{ steps.release_id.outputs.release-id }}
+      release-assets: ${{ steps.artifacts.outputs.release-assets }}
+      image-name: ${{ steps.artifacts.outputs.image-name }}
+      image-digest: ${{ steps.artifacts.outputs.image-digest }}
       
     permissions:
 
@@ -88,6 +91,14 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+    - name: Get Release Artifacts
+      id: artifacts
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        echo "image-digest=$(echo '${{ steps.release.outputs.artifacts}}' | jq -r '.[]|select(.type=="Docker Manifest")|select(.name|test(":v"))|.extra.Digest')" >> "$GITHUB_OUTPUT"
+        echo "image-name=$(echo '${{ steps.release.outputs.artifacts}}' | jq -r '.[]|select(.type=="Docker Manifest")|select(.name|test(":v"))|.name|split(":")[0]')" >> "$GITHUB_OUTPUT"
+
     # Upload all built artifacts for attestation
     - name: Upload build artifacts for attestation
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -108,62 +119,88 @@ jobs:
           -H "X-GitHub-Api-Version: 2022-11-28" \
           /repos/${{ github.repository }}/releases | jq ".[] | select(.tag_name == \"$RELEASE_TAG\").id")
         echo "release-id=$release_id" | tee -a "$GITHUB_OUTPUT"
-    
-  attest:
-    name: Generate Attestation
-    needs: [draft_release]
+
+  attest-packages:
+    name: Package Provenance Attestation
+    needs: [release]
     permissions:
       attestations: write
       id-token: write
       contents: read
-    if: needs.draft_release.outputs.clean_semver == 'true'
-    uses: eliheady/wtutf/.github/workflows/attest.yml@b2b9b334200a97ff22f53ba64295f7a86e45c4e5
+    if: needs.release.outputs.clean_semver == 'true'
+    uses: eliheady/wtutf/.github/workflows/attest.yml@0edc67d4f0b1dd68f8f0d93477cb1cb255c68a88
     secrets: inherit
+    with:
+      artifact-upload-name: build-artifacts
+      artifact-restore-path: dist
+      subject-path: |
+        dist/*wtutf*
+        dist/checksums*
+    
+  attest-images:
+    name: Image Provenance Attestation
+    needs: [release]
+    permissions:
+      attestations: write
+      id-token: write
+      contents: read
+      #packages: write # push attestation to the registry
+    if: needs.release.outputs.image-name != '' && needs.release.outputs.image-digest != ''
+    #if: needs.release.outputs.clean_semver == 'true' && needs.release.outputs.image-name != '' && needs.release.outputs.image-digest != ''
+    uses: eliheady/wtutf/.github/workflows/attest.yml@0edc67d4f0b1dd68f8f0d93477cb1cb255c68a88
+    secrets: inherit
+    with:
+      subject-name: ${{ needs.release.outputs.image-name }}
+      subject-digest: ${{ needs.release.outputs.image-digest }}
 
   notes:
     runs-on: ubuntu-latest
-    needs: [draft_release, attest]
+    needs:
+      - release
+      - attest-packages
+      - attest-images
     name: Add Release Notes
 
     steps:
     - name: Debug Attest Outputs
       run: |
-        echo "Attest outputs: ${{ toJson(needs.attest.outputs) }}"
-
-    #- name: Generate container attestation
-    #  uses: actions/attest-build-provenance@v2
-    #  with:
-    #    subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-    #    # todo: figure out docker manifest goreleaser issue, then set these in the metadata step
-    #    #echo "image-digest=$(echo "$ARTIFACTS" | jq -r '.[]|select(.type=="Docker Manifest")|select(.name|test(":v"))|.extra.Digest')" >> "$GITHUB_OUTPUT"
-    #    #echo "image-name=$(echo "$ARTIFACTS" | jq -r '.[]|select(.type=="Docker Manifest")|select(.name|test(":v"))|.name|split(":")[0]')" >> "$GITHUB_OUTPUT"
-    #    subject-digest: ${{ steps.metadata.outputs.image-digest }}
-    #    push-to-registry: true
+        echo "Attest packages outputs: ${{ toJson(needs.attest-packages.outputs) }}"
+        echo "Attest images outputs: ${{ toJson(needs.attest-images.outputs) }}"
 
     - name: Attestation Notes
-      if: needs.draft_release.outputs.clean_semver == 'true'
+      if: needs.release.outputs.clean_semver == 'true'
       env:
         GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-        RELEASE_TAG: ${{ needs.draft_release.outputs.release-tag }}
-        RELEASE_ID: ${{ needs.draft_release.outputs.release-id }}
-        ATTESTATION_URL: ${{ needs.attest.outputs.attestation-url }}
+        RELEASE_TAG: ${{ needs.release.outputs.release-tag }}
+        RELEASE_ID: ${{ needs.release.outputs.release-id }}
+        ATTESTATION_URL_PACKAGES: ${{ needs.attest-packages.outputs.attestation-url }}
+        ATTESTATION_URL_IMAGES: ${{ needs.attest-images.outputs.attestation-url }}
       run: |-
+        if [ -n "$ATTESTATION_URL_PACKAGES" ]; then
+          PKG_ATTEST="  - [$ATTESTATION_URL_PACKAGES]($ATTESTATION_URL_PACKAGES)"
+        fi
+        if [ -n "$ATTESTATION_URL_IMAGES" ]; then
+          IMG_ATTEST="  - [$ATTESTATION_URL_IMAGES]($ATTESTATION_URL_IMAGES)"
+        fi
         tmpfile=$(mktemp)
         RELEASE_NOTES_FILE=$tmpfile-notes.md
         echo $RELEASE_NOTES_FILE
         gh release view $RELEASE_TAG --json body -R ${{ github.repository }} | jq -r '.body' > $RELEASE_NOTES_FILE
+
         cat >> $RELEASE_NOTES_FILE <<EOF
         ## Verify Release Artifacts
 
-        The attestation results for this release are at [$ATTESTATION_URL]($ATTESTATION_URL).
+        Attestation(s) for this release:
+        $PKG_ATTEST
+        $IMG_ATTEST
 
-        To verify this release: download a release artifact, install \`gh\` and run this
-        command (all artifacts are signed, change \`checksums.txt\` as needed for your use-case):
+        To verify packages in this release: download a release artifact, install \`gh\` and run this command (all artifacts are signed, change \`checksums.txt\` as needed for your use-case):
 
         \`\`\`shell
         gh attestation verify checksums.txt -R ${{ github.repository }}
         \`\`\`
         EOF
+
         # "gh release edit" can sometimes create new releases, which is not what we want here.
         #gh release edit ${RELEASE_TAG} --notes-file $RELEASE_NOTES_FILE
         gh api --method PATCH \

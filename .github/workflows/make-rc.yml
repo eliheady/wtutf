@@ -145,13 +145,13 @@ jobs:
       id-token: write
       contents: read
       #packages: write # push attestation to the registry
-    if: needs.release.outputs.image-name != '' && needs.release.outputs.image-digest != ''
-    #if: needs.release.outputs.clean_semver == 'true' && needs.release.outputs.image-name != '' && needs.release.outputs.image-digest != ''
+    if: needs.release.outputs.clean_semver == 'true' && needs.release.outputs.image-name != '' && needs.release.outputs.image-digest != ''
     uses: eliheady/wtutf/.github/workflows/attest.yml@0edc67d4f0b1dd68f8f0d93477cb1cb255c68a88
     secrets: inherit
     with:
       subject-name: ${{ needs.release.outputs.image-name }}
       subject-digest: ${{ needs.release.outputs.image-digest }}
+      push-to-registry: true
 
   notes:
     runs-on: ubuntu-latest

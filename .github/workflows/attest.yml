@@ -80,7 +80,7 @@ jobs:
             echo "Error: If subject-checksums is provided, artifact-restore-path and artifact-upload-name must be provided."
             exit 1
           fi
-          restore-artifacts=true
+          restore_artifacts=true
           satisfied_args=true
         fi
 
@@ -93,7 +93,7 @@ jobs:
             echo "Error: If subject-checksums is provided, artifact-restore-path and artifact-upload-name must be provided."
             exit 1
           fi
-          restore-artifacts=true
+          restore_artifacts=true
           satisfied_args=true
         fi
 

@@ -69,14 +69,8 @@ jobs:
     - name: Validate inputs
       id: validate-inputs
       run: |
-        echo "subject-path='${{ inputs.subject-path }}'"
-        echo "subject-digest='${{ inputs.subject-digest }}'"
-        echo "subject-name='${{ inputs.subject-name }}'"
-        echo "subject-checksums='${{ inputs.subject-checksums }}'"
-        echo "push-to-registry='${{ inputs.push-to-registry }}'"
-        echo "show-summary='${{ inputs.show-summary }}'"
-
         satisfied_args=false
+        restore_artifacts=false
         if [ -n "${{ inputs.subject-checksums }}" ]; then
           if [ -n "${{ inputs.subject-name }}" -o -n "${{ inputs.subject-path }}" ]; then
             echo "Error: If subject-checksums is provided, subject-name and subject-path must not be provided."
@@ -86,7 +80,7 @@ jobs:
             echo "Error: If subject-checksums is provided, artifact-restore-path and artifact-upload-name must be provided."
             exit 1
           fi
-          echo "restore-artifacts='true'" >> "$GITHUB_OUTPUT"
+          restore-artifacts=true
           satisfied_args=true
         fi
 
@@ -99,7 +93,7 @@ jobs:
             echo "Error: If subject-checksums is provided, artifact-restore-path and artifact-upload-name must be provided."
             exit 1
           fi
-          echo "restore-artifacts='true'" >> "$GITHUB_OUTPUT"
+          restore-artifacts=true
           satisfied_args=true
         fi
 
@@ -120,10 +114,22 @@ jobs:
           exit 1
         fi
 
+        echo "restore-artifacts=$restore_artifacts" >> "$GITHUB_OUTPUT"
+
+        echo "restore-artifacts=$restore_artifacts"
+        echo "artifact-upload-name='${{ inputs.artifact-upload-name }}'"
+        echo "artifact-restore-path='${{ inputs.artifact-restore-path }}'"
+        echo "subject-path='${{ inputs.subject-path }}'"
+        echo "subject-digest='${{ inputs.subject-digest }}'"
+        echo "subject-name='${{ inputs.subject-name }}'"
+        echo "subject-checksums='${{ inputs.subject-checksums }}'"
+        echo "push-to-registry='${{ inputs.push-to-registry }}'"
+        echo "show-summary='${{ inputs.show-summary }}'"
+
     # Download the artifacts uploaded by the build job
     - name: Download build artifacts
       id: download-artifacts
-      if: ${{ steps.validate-inputs.outputs.restore-artifacts == 'true' }}
+      if: steps.validate-inputs.outputs.restore-artifacts == 'true'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0

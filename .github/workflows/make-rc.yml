@@ -96,9 +96,8 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        #echo "release-assets=$(gh release view ${{ steps.setup.outputs.release-tag }} --json assets -q '.assets[].name' | tr '\n' ' ')" >> "$GITHUB_OUTPUT"
-        echo "image-digest=$(echo "${{ steps.release.outputs.artifacts}}" | jq -r '.[]|select(.type=="Docker Manifest")|select(.name|test(":v"))|.extra.Digest')" >> "$GITHUB_OUTPUT"
-        echo "image-name=$(echo "${{ steps.release.outputs.artifacts}}" | jq -r '.[]|select(.type=="Docker Manifest")|select(.name|test(":v"))|.name|split(":")[0]')" >> "$GITHUB_OUTPUT"
+        echo "image-digest=$(echo '${{ steps.release.outputs.artifacts}}' | jq -r '.[]|select(.type=="Docker Manifest")|select(.name|test(":v"))|.extra.Digest')" >> "$GITHUB_OUTPUT"
+        echo "image-name=$(echo '${{ steps.release.outputs.artifacts}}' | jq -r '.[]|select(.type=="Docker Manifest")|select(.name|test(":v"))|.name|split(":")[0]')" >> "$GITHUB_OUTPUT"
 
     # Upload all built artifacts for attestation
     - name: Upload build artifacts for attestation
@@ -156,7 +155,10 @@ jobs:
 
   notes:
     runs-on: ubuntu-latest
-    needs: [release, attest-packages, attest-images]
+    needs:
+      - release
+      - attest-packages
+      - attest-images
     name: Add Release Notes
 
     steps:

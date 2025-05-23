@@ -137,7 +137,9 @@ jobs:
         name: ${{ inputs.artifact-upload-name }}
         path: ${{ inputs.artifact-restore-path }}
 
+    # If this is a container attestation job, do the required setup (login, pull, etc)
     - name: Set up Docker Buildx
+      if: inputs.push-to-registry == true
       uses: docker/setup-buildx-action@d70bba72b1f3fd22344832f00baa16ece964efeb # v3.3.0
 
     - name: Login to GitHub Container Registry
@@ -147,6 +149,11 @@ jobs:
         registry: ghcr.io
         username: ${{ github.repository_owner }}
         password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Pull Image
+      if: inputs.push-to-registry == true
+      run: |
+        docker pull ${{ inputs.subject-name }}@${{ inputs.subject-digest }}
 
     - name: Attest Build Provenance
       id: attest

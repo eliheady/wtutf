@@ -128,7 +128,7 @@ jobs:
       id-token: write
       contents: read
     if: needs.release.outputs.clean_semver == 'true'
-    uses: eliheady/wtutf/.github/workflows/attest.yml@d6d252c6fa2e55859b54437ebf926e72ef6ec652
+    uses: eliheady/wtutf/.github/workflows/attest.yml@fc5346f9d1bdbb24531ee2e0441711ac66937f40
     secrets: inherit
     with:
       artifact-upload-name: build-artifacts
@@ -146,7 +146,7 @@ jobs:
       contents: read
       #packages: write # push attestation to the registry
     if: needs.release.outputs.clean_semver == 'true' && needs.release.outputs.image-name != '' && needs.release.outputs.image-digest != ''
-    uses: eliheady/wtutf/.github/workflows/attest.yml@d6d252c6fa2e55859b54437ebf926e72ef6ec652
+    uses: eliheady/wtutf/.github/workflows/attest.yml@fc5346f9d1bdbb24531ee2e0441711ac66937f40
     secrets: inherit
     with:
       subject-name: ${{ needs.release.outputs.image-name }}

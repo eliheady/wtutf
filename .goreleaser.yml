@@ -60,49 +60,67 @@ sboms:
   - id: source
     artifacts: source
 
-dockers:
-  - image_templates:
-      - &amd_image "ghcr.io/eliheady/{{ .ProjectName }}:{{ .Tag }}-amd64"
-    goos: linux
-    goarch: amd64
-    use: buildx
-    dockerfile: Containerfile
-    build_flag_templates:
-      - --sbom=true
-      - --platform=linux/amd64
-      - --label=org.opencontainers.image.title={{ .ProjectName }}
-      - --label=org.opencontainers.image.description={{ .ProjectName }}
-      - --label=org.opencontainers.image.url={{ .GitURL }}
-      - --label=org.opencontainers.image.created={{ .Date }}
-      - --label=org.opencontainers.image.name={{ .ProjectName }}
-      - --label=org.opencontainers.image.revision={{ .FullCommit }}
-      - --label=org.opencontainers.image.version={{ .Version }}
-      - --label=org.opencontainers.image.source={{ .GitURL }}
-      - --label=org.opencontainers.image.licenses=MIT
-  - image_templates:
-      - &arm_image "ghcr.io/eliheady/{{ .ProjectName }}:{{ .Tag }}-arm64"
-    goos: linux
-    goarch: arm64
-    use: buildx
-    dockerfile: Containerfile
-    build_flag_templates:
-      - --sbom=true
-      - --platform=linux/arm64
-      - --label=org.opencontainers.image.title={{ .ProjectName }}
-      - --label=org.opencontainers.image.description={{ .ProjectName }}
-      - --label=org.opencontainers.image.url={{ .GitURL }}
-      - --label=org.opencontainers.image.created={{ .Date }}
-      - --label=org.opencontainers.image.name={{ .ProjectName }}
-      - --label=org.opencontainers.image.revision={{ .FullCommit }}
-      - --label=org.opencontainers.image.version={{ .Version }}
-      - --label=org.opencontainers.image.source={{ .GitURL }}
-      - --label=org.opencontainers.image.licenses=MIT
+kos:
+  - id: go
+    platforms:
+    - linux/amd64
+    - linux/arm64
+    tags:
+    - latest
+    - '{{.Tag}}'
+    bare: true
+    flags:
+    - -trimpath
+    - -tags=netgo
+    ldflags:
+    - -s -w
+    - -extldflags "-static"
+    - -X main.date={{ .CommitDate }}
+    - -X main.Version={{ .Version }}
+    - -X main.Commit={{ .FullCommit }}
+    - -X main.CommitDate={{ .CommitDate }}
 
-docker_manifests:
-  - name_template: ghcr.io/eliheady/{{ .ProjectName }}:{{ .Tag }}
-    image_templates:
-      - *amd_image
-      - *arm_image
+#dockers:
+#  - image_templates:
+#      - &amd_image "ghcr.io/eliheady/{{ .ProjectName }}:{{ .Tag }}-amd64"
+#    goos: linux
+#    goarch: amd64
+#    use: buildx
+#    dockerfile: Containerfile
+#    build_flag_templates:
+#      - --platform=linux/amd64
+#      - --label=org.opencontainers.image.title={{ .ProjectName }}
+#      - --label=org.opencontainers.image.description={{ .ProjectName }}
+#      - --label=org.opencontainers.image.url={{ .GitURL }}
+#      - --label=org.opencontainers.image.created={{ .Date }}
+#      - --label=org.opencontainers.image.name={{ .ProjectName }}
+#      - --label=org.opencontainers.image.revision={{ .FullCommit }}
+#      - --label=org.opencontainers.image.version={{ .Version }}
+#      - --label=org.opencontainers.image.source={{ .GitURL }}
+#      - --label=org.opencontainers.image.licenses=MIT
+#  - image_templates:
+#      - &arm_image "ghcr.io/eliheady/{{ .ProjectName }}:{{ .Tag }}-arm64"
+#    goos: linux
+#    goarch: arm64
+#    use: buildx
+#    dockerfile: Containerfile
+#    build_flag_templates:
+#      - --platform=linux/arm64
+#      - --label=org.opencontainers.image.title={{ .ProjectName }}
+#      - --label=org.opencontainers.image.description={{ .ProjectName }}
+#      - --label=org.opencontainers.image.url={{ .GitURL }}
+#      - --label=org.opencontainers.image.created={{ .Date }}
+#      - --label=org.opencontainers.image.name={{ .ProjectName }}
+#      - --label=org.opencontainers.image.revision={{ .FullCommit }}
+#      - --label=org.opencontainers.image.version={{ .Version }}
+#      - --label=org.opencontainers.image.source={{ .GitURL }}
+#      - --label=org.opencontainers.image.licenses=MIT
+#
+#docker_manifests:
+#  - name_template: ghcr.io/eliheady/{{ .ProjectName }}:{{ .Tag }}
+#    image_templates:
+#      - *amd_image
+#      - *arm_image
 
 #docker_signs:
 #  - cmd: cosign

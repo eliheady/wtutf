@@ -127,8 +127,9 @@ jobs:
       attestations: write
       id-token: write
       contents: read
+      packages: write # since permissions in the called workflow are not conditional and it is reused for container attestation
     if: needs.release.outputs.clean_semver == 'true'
-    uses: eliheady/wtutf/.github/workflows/attest.yml@fc5346f9d1bdbb24531ee2e0441711ac66937f40
+    uses: eliheady/wtutf/.github/workflows/attest.yml@780b31107bd43e73105594f31f987ab32be4c5f0
     secrets: inherit
     with:
       artifact-upload-name: build-artifacts
@@ -144,9 +145,9 @@ jobs:
       attestations: write
       id-token: write
       contents: read
-      #packages: write # push attestation to the registry
+      packages: write # push attestation to the registry
     if: needs.release.outputs.clean_semver == 'true' && needs.release.outputs.image-name != '' && needs.release.outputs.image-digest != ''
-    uses: eliheady/wtutf/.github/workflows/attest.yml@fc5346f9d1bdbb24531ee2e0441711ac66937f40
+    uses: eliheady/wtutf/.github/workflows/attest.yml@780b31107bd43e73105594f31f987ab32be4c5f0
     secrets: inherit
     with:
       subject-name: ${{ needs.release.outputs.image-name }}

@@ -60,6 +60,26 @@ sboms:
   - id: source
     artifacts: source
 
+kos:
+  - id: goreleaser-with-ko
+    platforms:
+    - linux/amd64
+    - linux/arm64
+    tags:
+    - latest
+    - '{{.Tag}}'
+    bare: true
+    flags:
+    - -trimpath
+    - -tags=netgo
+    ldflags:
+    - -s -w
+    - -extldflags "-static"
+    - -X main.date={{ .CommitDate }}
+    - -X main.Version={{ .Version }}
+    - -X main.Commit={{ .FullCommit }}
+    - -X main.CommitDate={{ .CommitDate }}
+
 dockers:
   - image_templates:
       - &amd_image "ghcr.io/eliheady/{{ .ProjectName }}:{{ .Tag }}-amd64"

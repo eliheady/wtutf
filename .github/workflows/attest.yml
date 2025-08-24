@@ -48,6 +48,9 @@ on:
       bundle-path:
         value: ${{ jobs.sign-artifact.outputs.bundle-path }}
 
+permissions:
+  contents: read
+
 jobs:
   sign-artifact:
     name: Sign Artifacts
@@ -65,6 +68,11 @@ jobs:
       contents: read
 
     steps:
+
+    - name: Harden the runner (Audit all outbound calls)
+      uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911 # v2.13.0
+      with:
+        egress-policy: audit
 
     - name: Validate inputs
       id: validate-inputs

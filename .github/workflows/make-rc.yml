@@ -50,10 +50,9 @@ jobs:
     - name: Setup
       id: setup
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        REF: ${{ github.ref }}
       run: |
-        TAG=${{ github.ref }}
-        TAG=${TAG#refs/tags/}
+        TAG=${REF#refs/tags/}
         echo "release-tag=$TAG" | tee -a "$GITHUB_OUTPUT"
         previous_releases=$( (gh release view $TAG --json id 2>/dev/null || echo '{"id":"ok"}') | jq -r '.id')
         if [ "$previous_releases" != "ok" ]; then
@@ -62,7 +61,7 @@ jobs:
           exit 1
         fi
         echo "Release $TAG does not exist. Proceeding."
-        if [[ "${{ github.ref }}" =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        if [[ "$REF" =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
           echo "This is a clean semver tag and the release will be submitted for attestation."
           echo "clean_semver=true" >> "$GITHUB_OUTPUT"
         else
@@ -75,7 +74,6 @@ jobs:
       with:
         registry: ghcr.io
         username: ${{ github.repository_owner }}
-        password: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Setup Go
       uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
@@ -93,13 +91,9 @@ jobs:
       with:
         version: '~> v2'
         args: release --clean --draft --skip announce
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Get Release Artifacts
       id: artifacts
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         echo "image-digest=$(echo '${{ steps.release.outputs.artifacts}}' | jq -r '.[]|select(.type=="Docker Manifest")|select(.name|test(":v"))|.extra.Digest')" >> "$GITHUB_OUTPUT"
         echo "image-name=$(echo '${{ steps.release.outputs.artifacts}}' | jq -r '.[]|select(.type=="Docker Manifest")|select(.name|test(":v"))|.name|split(":")[0]')" >> "$GITHUB_OUTPUT"
@@ -116,13 +110,13 @@ jobs:
     - name: Get Release ID
       id: release_id
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         RELEASE_TAG: ${{ steps.setup.outputs.release-tag }}
+        REPO: ${{ github.repository }}
       run: |
         release_id=$(gh api \
           -H "Accept: application/vnd.github+json" \
           -H "X-GitHub-Api-Version: 2022-11-28" \
-          /repos/${{ github.repository }}/releases | jq ".[] | select(.tag_name == \"$RELEASE_TAG\").id")
+          "/repos/$REPO/releases" | jq ".[] | select(.tag_name == \"$RELEASE_TAG\").id")
         echo "release-id=$release_id" | tee -a "$GITHUB_OUTPUT"
 
   attest-packages:
@@ -173,9 +167,12 @@ jobs:
         egress-policy: audit
 
     - name: Debug Attest Outputs
+      env:
+        ATTEST_PACKAGES: ${{ toJson(needs.attest-packages.outputs) }}
+        ATTEST_IMAGES: ${{ toJson(needs.attest-images.outputs) }}
       run: |
-        echo "Attest packages outputs: ${{ toJson(needs.attest-packages.outputs) }}"
-        echo "Attest images outputs: ${{ toJson(needs.attest-images.outputs) }}"
+        echo "Attest packages outputs: $ATTEST_PACKAGES"
+        echo "Attest images outputs: $ATTEST_IMAGES"
 
     - name: Attestation Notes
       if: needs.release.outputs.clean_semver == 'true'
@@ -185,6 +182,7 @@ jobs:
         RELEASE_ID: ${{ needs.release.outputs.release-id }}
         ATTESTATION_URL_PACKAGES: ${{ needs.attest-packages.outputs.attestation-url }}
         ATTESTATION_URL_IMAGES: ${{ needs.attest-images.outputs.attestation-url }}
+        REPO: ${{ github.repository }}
       run: |-
         if [ -n "$ATTESTATION_URL_PACKAGES" ]; then
           PKG_ATTEST="  - [$ATTESTATION_URL_PACKAGES]($ATTESTATION_URL_PACKAGES)"
@@ -195,7 +193,7 @@ jobs:
         tmpfile=$(mktemp)
         RELEASE_NOTES_FILE=$tmpfile-notes.md
         echo $RELEASE_NOTES_FILE
-        gh release view $RELEASE_TAG --json body -R ${{ github.repository }} | jq -r '.body' > $RELEASE_NOTES_FILE
+        gh release view $RELEASE_TAG --json body -R "$REPO" | jq -r '.body' > $RELEASE_NOTES_FILE
 
         cat >> $RELEASE_NOTES_FILE <<EOF
         ## Verify Release Artifacts
@@ -207,7 +205,7 @@ jobs:
         To verify packages in this release: download a release artifact, install \`gh\` and run this command (all artifacts are signed, change \`checksums.txt\` as needed for your use-case):
 
         \`\`\`shell
-        gh attestation verify checksums.txt -R ${{ github.repository }}
+        gh attestation verify checksums.txt -R "$REPO" }}
         \`\`\`
         EOF
 
@@ -216,7 +214,7 @@ jobs:
         gh api --method PATCH \
           -H "Accept: application/vnd.github.v3+json" \
           -H "X-GitHub-Api-Version: 2022-11-28" \
-          /repos/${{ github.repository }}/releases/${RELEASE_ID} \
+          "/repos/$REPO/releases/$RELEASE_ID" \
           -f "body=$(cat $RELEASE_NOTES_FILE)" \
           -f "make_latest=false"
         echo "release-notes=$RELEASE_NOTES_FILE" >> "$GITHUB_OUTPUT"

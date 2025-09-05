@@ -76,15 +76,24 @@ jobs:
 
     - name: Validate inputs
       id: validate-inputs
+      env:
+        SUBJECT_NAME: ${{ inputs.subject-name }}
+        SUBJECT_PATH: ${{ inputs.subject-path }}
+        SUBJECT_DIGEST: ${{ inputs.subject-digest }}
+        SUBJECT_CHECKSUMS: ${{ inputs.subject-checksums }}
+        ARTIFACT_RESTORE_PATH: ${{ inputs.artifact-restore-path }}
+        ARTIFACT_UPLOAD_NAME: ${{ inputs.artifact-upload-name }}
+        PUSH_TO_REGISTRY: ${{ inputs.push-to-registry }}
+        SHOW_SUMMARY: ${{ inputs.show-summary }}
       run: |
         satisfied_args=false
         restore_artifacts=false
-        if [ -n "${{ inputs.subject-checksums }}" ]; then
-          if [ -n "${{ inputs.subject-name }}" -o -n "${{ inputs.subject-path }}" ]; then
+        if [ -n "$SUBJECT_CHECKSUMS" ]; then
+          if [ -n "$SUBJECT_NAME" ] || [ -n "$SUBJECT_PATH" ]; then
             echo "Error: If subject-checksums is provided, subject-name and subject-path must not be provided."
             exit 1
           fi
-          if [ -z "${{ inputs.artifact-restore-path }}" -o -z "${{ inputs.artifact-upload-name }}" ]; then
+          if [ -z "$ARTIFACT_RESTORE_PATH" ] || [ -z "$ARTIFECT_UPLOAD_NAME" ]; then
             echo "Error: If subject-checksums is provided, artifact-restore-path and artifact-upload-name must be provided."
             exit 1
           fi
@@ -92,12 +101,12 @@ jobs:
           satisfied_args=true
         fi
 
-        if [ -n "${{ inputs.subject-path }}" ]; then
-          if [ -n "${{ inputs.subject-name }}" -o -n "${{ inputs.subject-checksums }}" ]; then
+        if [ -n "$SUBJECT_PATH" ]; then
+          if [ -n "$SUBJECT_NAME" ] || [ -n "$SUBJECT_CHECKSUMS" ]; then
             echo "Error: If subject-path is provided, subject-name and subject-checksums must not be provided."
             exit 1
           fi
-          if [ -z "${{ inputs.artifact-restore-path }}" -o -z "${{ inputs.artifact-upload-name }}" ]; then
+          if [ -z "$ARTIFACT_RESTORE_PATH" ] || [ -z "$ARTIFACT_UPLOAD_NAME" ]; then
             echo "Error: If subject-checksums is provided, artifact-restore-path and artifact-upload-name must be provided."
             exit 1
           fi
@@ -105,12 +114,12 @@ jobs:
           satisfied_args=true
         fi
 
-        if [ -n "${{ inputs.subject-digest }}" ]; then
-          if [ -z "${{ inputs.subject-name }}" ]; then
+        if [ -n "$SUBJECT_DIGEST" ]; then
+          if [ -z "$SUBJECT_NAME" ]; then
             echo "Error: If subject-digest is provided, subject-name must be provided."
             exit 1
           fi
-          if [ -n "${{ inputs.subject-path }}" -o -n "${{ inputs.subject-checksums }}" ]; then
+          if [ -n "$SUBJECT_PATH" ] || [ -n "$SUBJECT_CHECKSUMS" ]; then
             echo "Error: If subject-digest is provided, subject-path and subject-checksums must not be provided."
             exit 1
           fi
@@ -125,21 +134,19 @@ jobs:
         echo "restore-artifacts=$restore_artifacts" >> "$GITHUB_OUTPUT"
 
         echo "restore-artifacts=$restore_artifacts"
-        echo "artifact-upload-name='${{ inputs.artifact-upload-name }}'"
-        echo "artifact-restore-path='${{ inputs.artifact-restore-path }}'"
-        echo "subject-path='${{ inputs.subject-path }}'"
-        echo "subject-digest='${{ inputs.subject-digest }}'"
-        echo "subject-name='${{ inputs.subject-name }}'"
-        echo "subject-checksums='${{ inputs.subject-checksums }}'"
-        echo "push-to-registry='${{ inputs.push-to-registry }}'"
-        echo "show-summary='${{ inputs.show-summary }}'"
+        echo "artifact-upload-name=$ARTIFACT_UPLOAD_NAME"
+        echo "artifact-restore-path=$ARTIFACT_RESTORE_PATH"
+        echo "subject-path=$SUBJECT_PATH"
+        echo "subject-digest=$SUBJECT_DIGEST"
+        echo "subject-name=$SUBJECT_NAME"
+        echo "subject-checksums=$SUBJECT_CHECKSUMS"
+        echo "push-to-registry=$PUSH_TO_REGISTRY"
+        echo "show-summary=$SHOW_SUMMARY"
 
     # Download the artifacts uploaded by the build job
     - name: Download build artifacts
       id: download-artifacts
       if: steps.validate-inputs.outputs.restore-artifacts == 'true'
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
       with:
         name: ${{ inputs.artifact-upload-name }}
@@ -147,9 +154,7 @@ jobs:
 
     - name: Attest Build Provenance
       id: attest
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0
+      uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3.0.0
       with:
         subject-path: ${{ inputs.subject-path }}
         subject-checksums: ${{ inputs.subject-checksums }}
@@ -160,7 +165,11 @@ jobs:
 
     - name: Set outputs
       id: collect
+      env:
+        ATTESTATION_URL: ${{ steps.attest.outputs.attestation-url }}
+        ATTESTATION_ID: ${{ steps.attest.outputs.attestation-id }}
+        BUNDLE_PATH: ${{ steps.attest.outputs.bundle-path }}
       run: |
-        echo "attestation-url=${{ steps.attest.outputs.attestation-url }}" >> $GITHUB_OUTPUT
-        echo "attestation-id=${{ steps.attest.outputs.attestation-id }}" >> $GITHUB_OUTPUT
-        echo "bundle-path=${{ steps.attest.outputs.bundle-path }}" >> $GITHUB_OUTPUT
+        echo "attestation-url=$ATTESTATION_URL" >> $GITHUB_OUTPUT
+        echo "attestation-id=$ATTESTATION_ID" >> $GITHUB_OUTPUT
+        echo "bundle-path=$BUNDLE_PATH" >> $GITHUB_OUTPUT

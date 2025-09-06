@@ -200,7 +200,7 @@ func gatherOutputData(ustring string, showRanges, strict, punyDecode, table bool
 	return data
 }
 
-// formatPlainText renders OutputData as the original plain text output
+// formatPlainText renders OutputData as a plain text table output
 func formatPlainText(data OutputData, showRanges, table bool) string {
 	var b strings.Builder
 	tw := tabwriter.NewWriter(&b, 0, 0, 2, ' ', 0)
@@ -227,7 +227,14 @@ func formatPlainText(data OutputData, showRanges, table bool) string {
 	if table && len(data.Table) > 0 {
 		fmt.Fprintf(tw, "----------------------------------\n")
 		header := []string{"printable", "code point", "bytes (len)"}
-		if len(data.Table) > 0 && len(data.Table[0].Errors) > 0 {
+		hasErrors := false
+		for _, row := range data.Table {
+			if len(row.Errors) > 0 {
+				hasErrors = true
+				break
+			}
+		}
+		if hasErrors {
 			header = append(header, "conversion rules violated")
 		}
 		fmt.Fprintf(tw, "%s\t%s\t%s", header[0], header[1], header[2])
@@ -239,7 +246,7 @@ func formatPlainText(data OutputData, showRanges, table bool) string {
 			bytesColumn := fmt.Sprintf("%s (%d)", row.Bytes, row.Length)
 			errors := strings.Join(row.Errors, ", ")
 			fmt.Fprintf(tw, "%s\t%s\t%s", row.Printable, row.CodePoint, bytesColumn)
-			if len(header) > 3 {
+			if hasErrors {
 				fmt.Fprintf(tw, "\t%s", errors)
 			}
 			fmt.Fprintf(tw, "\n")

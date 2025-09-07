@@ -51,6 +51,7 @@ jobs:
       id: setup
       env:
         REF: ${{ github.ref }}
+        TOKEN: ${{ secrets.RELEASE_TOKEN }}
       run: |
         TAG=${REF#refs/tags/}
         echo "release-tag=$TAG" | tee -a "$GITHUB_OUTPUT"
@@ -68,6 +69,7 @@ jobs:
           echo "NOTICE This is a pre-release tag and the attestation steps will be skipped."
           echo "clean_semver=false" >> "$GITHUB_OUTPUT"
         fi
+        echo "GITHUB_TOKEN=$TOKEN" >>"$GITHUB_ENV"
 
     - name: Login to GitHub Container Registry
       uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3.5.0

@@ -68,4 +68,62 @@ func TestJSONOutput(t *testing.T) {
 			}
 		})
 	}
+
+	// Additional cases for strict and decode flags
+	strictTests := []struct {
+		name       string
+		input      string
+		strict     bool
+		punyDecode bool
+		wantErr    bool
+	}{
+		{
+			"non-strict should allow conversion from valid Punycode",
+			"xn--piata-pta",
+			false,
+			true,
+			false,
+		},
+		{
+			"should report conversion error from invalid Punycode",
+			"xn--piata-abc",
+			true,
+			true,
+			true,
+		},
+		{
+			"strict should allow valid UTF-8 input",
+			"piñata", // 'ñ' as single rune
+			true,
+			false,
+			false,
+		},
+		{
+			"strict should block invalid UTF-8 input",
+			string([]rune{
+				'p',
+				'i',
+				'n',
+				0x0303, // 'n' + combining '◌̃' (U+0303)
+				'a',
+				't',
+				'a'},
+			),
+			true,
+			false,
+			true,
+		},
+	}
+
+	for _, st := range strictTests {
+		t.Run(st.name, func(t *testing.T) {
+			data := gatherOutputData(st.input, false, st.strict, st.punyDecode, false)
+			if st.wantErr && data.PunycodeError == "" {
+				t.Errorf("expected PunycodeError for strict=%v, input=%q", st.strict, st.input)
+			}
+			if !st.wantErr && data.PunycodeError != "" {
+				t.Errorf("did not expect PunycodeError for strict=%v, input=%q: %s", st.strict, st.input, data.PunycodeError)
+			}
+		})
+	}
 }

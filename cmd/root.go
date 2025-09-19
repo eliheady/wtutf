@@ -80,7 +80,7 @@ func parseFlags(cmd *cobra.Command, args []string) string {
 
 	if compare, _ := flags.GetBool("check"); compare {
 		var checkResult int
-		if checkMultipleRange(showRanges, args[0]) {
+		if checkMultipleRange(os.Stdout, showRanges, args[0]) {
 			checkResult = 1
 		}
 		os.Exit(checkResult)

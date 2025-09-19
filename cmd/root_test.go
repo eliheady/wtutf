@@ -71,11 +71,11 @@ func TestJSONOutput(t *testing.T) {
 
 	// Additional cases for strict and decode flags
 	strictTests := []struct {
-		name   string
-		input  string
-		strict bool
+		name       string
+		input      string
+		strict     bool
 		punyDecode bool
-		wantErr bool
+		wantErr    bool
 	}{
 		{
 			"non-strict should allow conversion from valid Punycode",

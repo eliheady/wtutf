@@ -104,7 +104,7 @@ func TestJSONOutput(t *testing.T) {
 				'p',
 				'i',
 				'n',
-				0303, // 'n' + combining '◌̃' (U+0303)
+				0x0303, // 'n' + combining '◌̃' (U+0303)
 				'a',
 				't',
 				'a'},

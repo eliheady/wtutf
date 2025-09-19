@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"testing"
 )
 
@@ -116,6 +117,13 @@ func TestCheckMultipleRange(t *testing.T) {
 			expectedMulti := ranges > 1
 			if expectedMulti != tc.wantMulti {
 				t.Fatalf("computed expectedMulti=%v for input %q, but test expects %v", expectedMulti, tc.input, tc.wantMulti)
+			}
+
+			// Exercise the function under test. Pass a buffer to capture any output.
+			var buf bytes.Buffer
+			got := checkMultipleRange(&buf, tc.showRanges, tc.input)
+			if got != tc.wantMulti {
+				t.Fatalf("checkMultipleRange(%q) = %v, want %v", tc.input, got, tc.wantMulti)
 			}
 
 			// if showRanges was requested, verify UnicodeRanges contains expected names

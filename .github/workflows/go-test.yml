@@ -4,8 +4,8 @@ name: "TEST: Run Go Tests"
 
 on:
   workflow_dispatch:
-  #push:
-  #  branches: [ "main" ]
+  push:
+    branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
 
@@ -25,7 +25,7 @@ jobs:
     - id: govulncheck
       uses: golang/govulncheck-action@b625fbe08f3bccbe446d94fbf87fcc875a4f50ee # v1.0.4
 
-  build:
+  test:
     runs-on: ubuntu-latest
     steps:
     - name: Harden the runner (Audit all outbound calls)

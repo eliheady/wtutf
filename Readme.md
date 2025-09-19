@@ -1,6 +1,12 @@
+# WTUTF
+
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/eliheady/wtutf/badge)](https://scorecard.dev/viewer/?uri=github.com/eliheady/wtutf)
+[![Go Report Card](https://goreportcard.com/badge/github.com/eliheady/wtutf)](https://goreportcard.com/report/github.com/eliheady/wtutf)
+[![codecov](https://codecov.io/github/eliheady/wtutf/graph/badge.svg?token=5GJS1NGAZ7)](https://codecov.io/github/eliheady/wtutf)
+
 ## What the UTF
 
-A simple utility to help me out of my ASCII-centric shell
+A simple utility to combat ASCII-centrism
 
 This program just prints out the code points of the string you feed into it. It can also show you the punycode conversion of your string and failure reasons if conversion isn't possible.
 

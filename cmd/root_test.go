@@ -100,7 +100,15 @@ func TestJSONOutput(t *testing.T) {
 		},
 		{
 			"strict should block invalid UTF-8 input",
-			"piñata", // 'n' + '◌̃' (U+0303) instead of 'ñ'
+			string([]rune{
+				'p',
+				'i',
+				'n',
+				0303, // 'n' + combining '◌̃' (U+0303)
+				'a',
+				't',
+				'a'},
+			),
 			true,
 			false,
 			true,

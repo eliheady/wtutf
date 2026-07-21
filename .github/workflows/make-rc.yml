@@ -12,7 +12,7 @@ permissions: read-all
 
 jobs:
   release:
-    if: ${{ github.event.base_ref == 'refs/heads/main' }}
+
     name: Draft Release
     runs-on: ubuntu-latest
 

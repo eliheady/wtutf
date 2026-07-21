@@ -12,7 +12,7 @@ permissions: read-all
 
 jobs:
   release:
-
+    if: ${{ github.event.base_ref == 'refs/heads/main' }}
     name: Draft Release
     runs-on: ubuntu-latest
 
@@ -37,6 +37,11 @@ jobs:
 
     steps:
 
+    - name: Dump GitHub context
+      run: echo "$GITHUB_CONTEXT"
+      env:
+        GITHUB_CONTEXT: ${{ toJson(github) }}
+
     - name: Harden the runner (Audit all outbound calls)
       uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2.15.1
       with:
@@ -46,6 +51,7 @@ jobs:
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         fetch-depth: 0
+        ref: refs/heads/${{ github.event.after }}
 
     - name: Setup
       id: setup

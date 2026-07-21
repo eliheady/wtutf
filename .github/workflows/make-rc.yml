@@ -45,6 +45,7 @@ jobs:
     - name: Checkout repo
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
+        persist-credentials: false
         fetch-depth: 0
 
     - name: Setup
@@ -69,7 +70,6 @@ jobs:
           echo "NOTICE This is a pre-release tag and the attestation steps will be skipped."
           echo "clean_semver=false" >> "$GITHUB_OUTPUT"
         fi
-        echo "GITHUB_TOKEN=$TOKEN" >>"$GITHUB_ENV"
 
     - name: Login to GitHub Container Registry
       uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
@@ -180,7 +180,6 @@ jobs:
     - name: Attestation Notes
       if: needs.release.outputs.clean_semver == 'true'
       env:
-        GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         RELEASE_TAG: ${{ needs.release.outputs.release-tag }}
         RELEASE_ID: ${{ needs.release.outputs.release-id }}
         ATTESTATION_URL_PACKAGES: ${{ needs.attest-packages.outputs.attestation-url }}

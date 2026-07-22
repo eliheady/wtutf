@@ -97,6 +97,36 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+    - name: Confirm Binary Ref
+      env:
+        EXPECTED: ${{ github.sha }}
+      run: |
+        # Confirm Binary Ref
+        for binary in dist/*wtutf_*; do
+          if [ "${binary##*.}" == "gz" ]; then
+            tar -xzf "$binary" wtutf 2>/dev/null
+            binary_file=wtutf
+          fi
+          if [ "${binary##*.}" == "zip" ]; then
+            unzip -qo "$binary" wtutf.exe
+            binary_file=wtutf.exe
+          fi
+          if [ -n "$binary_file" ]; then
+            printf "Checking $binary: "
+            embed_ref=$(go version -m $binary_file | grep vcs.revision | cut -d= -f2)
+            if [ "$embed_ref" != "$EXPECTED" ]; then
+              echo ""
+              echo "ERROR: The embedded git revision in the binary does not match the current commit SHA."
+              echo "Expected: $EXPECTED"
+              echo "Found: $embed_ref"
+              exit 1
+            fi
+            rm $binary_file
+            unset binary_file
+            echo "OK"
+          fi
+        done
+
     - name: Get Release Artifacts
       id: artifacts
       run: |

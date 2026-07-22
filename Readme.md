@@ -182,3 +182,13 @@ git clone https://github.com/eliheady/wtutf
 cd wtutf
 go build .
 ```
+
+#### Reproduce a Release Binary
+
+Releases are built in such a way that they can be reproduced bit-for-bit locally. To do this, check out the release tag, then build with flags matching the CI build and strip out build-machine specifics:
+
+```shell
+CGO_ENABLED=0 go build -trimpath -tags=netgo -ldflags="-s -w -buildid="
+```
+
+Then download the release corresponding to your OS and arch, unpack, and compare your locally built binary with the released one.

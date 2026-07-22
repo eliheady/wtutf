@@ -94,6 +94,8 @@ jobs:
       with:
         version: '~> v2'
         args: release --clean --draft --skip announce
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Get Release Artifacts
       id: artifacts

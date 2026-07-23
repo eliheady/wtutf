@@ -218,6 +218,7 @@ jobs:
         ATTESTATION_URL_PACKAGES: ${{ needs.attest-packages.outputs.attestation-url }}
         ATTESTATION_URL_IMAGES: ${{ needs.attest-images.outputs.attestation-url }}
         REPO: ${{ github.repository }}
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |-
         if [ -n "$ATTESTATION_URL_PACKAGES" ]; then
           PKG_ATTEST="  - [$ATTESTATION_URL_PACKAGES]($ATTESTATION_URL_PACKAGES)"

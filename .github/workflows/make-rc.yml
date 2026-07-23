@@ -102,6 +102,7 @@ jobs:
         EXPECTED: ${{ github.sha }}
       run: |
         # Confirm Binary Ref
+        echo "Checking binaries embed the expected ref: $EXPECTED"
         for binary in dist/*wtutf_*; do
           if [ "${binary##*.}" == "gz" ]; then
             tar -xzf "$binary" wtutf 2>/dev/null

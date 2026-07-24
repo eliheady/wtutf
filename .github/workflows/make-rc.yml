@@ -53,6 +53,7 @@ jobs:
       env:
         REF: ${{ github.ref }}
         TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         TAG=${REF#refs/tags/}
         echo "release-tag=$TAG" | tee -a "$GITHUB_OUTPUT"
@@ -148,6 +149,7 @@ jobs:
       env:
         RELEASE_TAG: ${{ steps.setup.outputs.release-tag }}
         REPO: ${{ github.repository }}
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         release_id=$(gh api \
           -H "Accept: application/vnd.github+json" \
@@ -241,7 +243,7 @@ jobs:
         To verify packages in this release: download a release artifact, install \`gh\` and run this command (all artifacts are signed, change \`checksums.txt\` as needed for your use-case):
 
         \`\`\`shell
-        gh attestation verify checksums.txt -R "$REPO" }}
+        gh attestation verify checksums.txt -R "$REPO"
         \`\`\`
         EOF
 

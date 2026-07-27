@@ -44,6 +44,16 @@ archives:
     - goos: windows
       formats:
       - "zip"
+    builds_info:
+      group: root
+      owner: root
+      mode: 0644
+    files:
+      - src: LICENSE
+        info:
+          group: root
+          owner: root
+          mode: 0644
 
 checksum:
   name_template: 'checksums.txt'

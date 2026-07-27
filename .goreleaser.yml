@@ -54,6 +54,7 @@ archives:
           group: root
           owner: root
           mode: 0644
+          mtime: 2025-03-24T18:15:59Z
 
 checksum:
   name_template: 'checksums.txt'
